@@ -1,0 +1,227 @@
+<meta charset="utf-8">
+<title>init-cepqd · Choice-Unlock Gamemode Design</title>
+<style>
+  :root {
+    --bg: #f5f3ee;
+    --card: #fffdf8;
+    --ink: #2b2926;
+    --muted: #6e6a62;
+    --line: #e2ddd2;
+    --accent: #7a5c3e;      /* bronze */
+    --accent-2: #4a6151;    /* moss green */
+    --accent-3: #5a5f77;    /* slate blue */
+    --warn: #8a4b3c;
+    --chip-bg: #efe9dd;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.55 -apple-system, "Helvetica Neue", Segoe UI, sans-serif;
+    padding: 48px 20px 80px;
+  }
+  main { max-width: 880px; margin: 0 auto; }
+  h1 { font-size: 30px; letter-spacing: -0.5px; margin: 0 0 4px; }
+  .subtitle { color: var(--muted); margin: 0 0 36px; font-size: 15px; }
+  h2 {
+    font-size: 19px; margin: 44px 0 12px; padding-bottom: 6px;
+    border-bottom: 2px solid var(--line);
+  }
+  h2 .num { color: var(--accent); font-variant-numeric: tabular-nums; margin-right: 8px; }
+  h3 { font-size: 15.5px; margin: 22px 0 6px; }
+  p { margin: 8px 0; }
+  ul, ol { margin: 8px 0; padding-left: 22px; }
+  li { margin: 4px 0; }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    padding: 16px 20px; margin: 14px 0;
+  }
+  .lede {
+    background: var(--card); border-left: 4px solid var(--accent);
+    border-radius: 6px; padding: 14px 18px; font-size: 16px;
+  }
+  .rec {
+    border-left: 4px solid var(--accent-2); background: #f2f4ef;
+    border-radius: 6px; padding: 12px 18px; margin: 14px 0;
+  }
+  .rec strong:first-child { color: var(--accent-2); }
+  .risk {
+    border-left: 4px solid var(--warn); background: #f6efec;
+    border-radius: 6px; padding: 12px 18px; margin: 14px 0;
+  }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 14px; background: var(--card); }
+  .tablewrap { overflow-x: auto; }
+  th, td { border: 1px solid var(--line); padding: 8px 12px; text-align: left; vertical-align: top; }
+  th { background: var(--chip-bg); font-weight: 600; }
+  code {
+    background: var(--chip-bg); border-radius: 4px; padding: 1px 5px;
+    font: 13px ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  .chip {
+    display: inline-block; background: var(--chip-bg); border: 1px solid var(--line);
+    border-radius: 999px; padding: 1px 10px; font-size: 12.5px; color: var(--muted);
+    margin: 2px 3px 2px 0;
+  }
+  .good { color: var(--accent-2); font-weight: 600; }
+  .med  { color: var(--accent); font-weight: 600; }
+  .bad  { color: var(--warn); font-weight: 600; }
+  .muted { color: var(--muted); }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 700px) { .cols { grid-template-columns: 1fr; } }
+</style>
+
+<main>
+<h1>Choice-Unlock Gamemode for OSRS</h1>
+<p class="subtitle">Design exploration · RuneLite plugin concept · worktree <code>init-cepqd</code> · 2026-08-15</p>
+
+<div class="lede">
+  <strong>The pitch:</strong> a roguelite progression layer over OSRS. Everything starts locked —
+  skills, items, monsters, regions, quests. Playing the game earns points; hitting point
+  thresholds triggers a <em>choice event</em> where you pick your next unlocks. Your build
+  emerges from your choices, so two accounts on the same mode play completely different games.
+  Think <em>Leagues relics × Tileman × Bronzeman</em>, permanent and self-directed.
+</div>
+
+<h2><span class="num">1</span>Why this idea has legs — the prior-art map</h2>
+<p>Every mechanic you need already exists in isolation and is proven popular. Nobody has combined them into one directed progression system:</p>
+<div class="tablewrap"><table>
+  <tr><th>Existing mode</th><th>What it proves</th><th>What it lacks (your gap)</th></tr>
+  <tr><td><strong>OSRS TCG</strong> (Azderi, Plugin Hub)</td><td>The exact point economy you described works: 100 credits per 1,000 non-combat XP, credits = NPC combat level per kill. Massively popular, even got an official Jagex newspost.</td><td>Credits buy random card packs — pure collection, zero effect on how you play.</td></tr>
+  <tr><td><strong>Bronzeman mode</strong></td><td>Client-side item restriction is enforceable and fun (GE/trade blocking, unlock popups, chat commands).</td><td>Unlocks are passive (whatever drops first) — no choice, no scarcity.</td></tr>
+  <tr><td><strong>Tileman mode</strong></td><td>The earn-XP → spend-on-unlocks loop, enforced client-side, sustains 1000+ hour accounts and a big content-creator scene.</td><td>One currency, one unlock type (tiles). No branching.</td></tr>
+  <tr><td><strong>Region Locker / Chunkman</strong></td><td>Chunk-based area locking with map shading works and is beloved (Limpwurt etc.). Chunk unlock <em>rolls</em> are the drama engine of those series.</td><td>Unlocks are random rolls, not earned choices.</td></tr>
+  <tr><td><strong>Leagues (official)</strong></td><td>Points → threshold → <em>pick 1 of 3 relics</em> is the most hyped mechanic Jagex ships. Mutually exclusive choices create identity and debate.</td><td>Temporary, seasonal, server-side. Your mode makes it permanent on the main game.</td></tr>
+</table></div>
+<p><strong>Positioning in one line:</strong> "Leagues that never ends, where the relics are the game itself."</p>
+
+<h2><span class="num">2</span>Core loop</h2>
+<div class="card">
+  <p><strong>Play → earn points → hit threshold → choice event → new content → play.</strong></p>
+  <ol>
+    <li><strong>Earn:</strong> points from XP (per-skill, with diminishing returns), kills (scaled by combat level, like TCG), quest completions, diaries, clue caskets, first-time uniques.</li>
+    <li><strong>Threshold:</strong> escalating cost curve like levels (each choice event costs more than the last). Early game: a choice every 20–30 min. Late game: every few hours. This mirrors OSRS's own XP curve so it feels native.</li>
+    <li><strong>Choice event:</strong> a panel opens — you pick unlock(s). See §3 for the draft models.</li>
+    <li><strong>Enforcement:</strong> locked content is visibly greyed/blocked in the client (§4).</li>
+  </ol>
+</div>
+<h3>Anti-degeneracy rules (learned from TCG/Tileman)</h3>
+<ul>
+  <li><strong>Diminishing returns per source:</strong> without this, everyone AFKs the one cheap XP method they've unlocked. Points per XP should decay within a skill per session/day, so varied play is optimal.</li>
+  <li><strong>Bonus points for "firsts":</strong> first kill of each monster, first completion of each quest/diary — rewards breadth, which is the whole spirit of the mode.</li>
+  <li><strong>No point loss ever</strong> — deaths cost gear (normal rules), not progression. Losing meta-currency feels terrible in an honor mode.</li>
+</ul>
+
+<h2><span class="num">3</span>Choice architecture — the heart of the design</h2>
+<p>Three viable models, and this decision defines the mode's personality:</p>
+<div class="tablewrap"><table>
+  <tr><th>Model</th><th>How it works</th><th>Feel</th><th>Risk</th></tr>
+  <tr><td><strong>A. Free shop</strong></td><td>Points are currency; every unlock has a price; buy anything anytime.</td><td>Strategic, planner's dream</td><td>Solved by spreadsheets in a week; everyone follows the same meta route. Choices stop mattering.</td></tr>
+  <tr><td><strong>B. Pure draft</strong></td><td>Each threshold offers 3 random options per category ("pick 1 of 3 monsters"); pick one, rest vanish.</td><td>Roguelite, high drama, every account unique</td><td>RNG can starve you of what you need (softlock-adjacent, see §5).</td></tr>
+  <tr><td><strong>C. Token tiers</strong></td><td>Thresholds grant typed tokens (skill token, region token, item token…); spend freely within the type.</td><td>Structured, predictable pacing</td><td>Less exciting; closest to "Leagues points shop".</td></tr>
+</table></div>
+<div class="rec">
+  <strong>Recommendation: B with safety valves (draft-plus).</strong>
+  Pick 1 of 3 drafted options, plus: <strong>1 reroll</strong> per choice event; a <strong>banked skip</strong> (decline now, bank the choice); and <strong>smart weighting</strong> — the draft pool is biased toward things adjacent to what you own (you've unlocked Lumbridge → Draynor/Al Kharid weighted up; you have a bronze axe → Woodcutting-adjacent items weighted up). This keeps runs coherent without killing variance. Every N-th choice (say every 5th) is a <strong>free pick</strong> — choose anything — as the pressure-release valve.
+</div>
+<h3>Choice-event composition</h3>
+<p>Your instinct ("choose 1 mob and 1 item") generalizes well: a choice event deals one draft <em>per category wheel</em>, rotating — e.g. event 1: monster + item; event 2: region + skill; event 3: quest + item. Big milestones (every 10th) offer a <strong>keystone</strong>: a region, a quest line, or a skill — the build-defining picks.</p>
+<h3>Making choices <em>hurt</em> (in the good way)</h3>
+<ul>
+  <li><strong>Skills as keystones:</strong> start with 3 combat-ish basics unlocked (e.g. Attack/Strength/Hitpoints or a chosen combat style) + 1 free pick. Every further skill is a major unlock. An account that unlocks Fishing before Prayer plays very differently.</li>
+  <li><strong>Item unlocks by tag, not ID:</strong> unlock "tin/copper + bronze tier", "logs (normal)", "shrimp/sardine" — classes of items. Per-item-ID drafting across 20k items is noise; per-tag is a real decision. (Curate ~300–500 tags; this is the main content-authoring job.)</li>
+  <li><strong>Optional curses (Slay-the-Spire style):</strong> voluntarily take a restriction ("no banking in this region", "monsters here deal +20% damage" — honor-tracked) for bonus points. Great content-creator fuel.</li>
+  <li><strong>Exclusive forks at milestones:</strong> occasional either/or picks that permanently close the other path ("Kourend OR Morytania"). Use sparingly — these create account identity.</li>
+</ul>
+
+<h2><span class="num">4</span>Enforcement — what a RuneLite plugin can actually lock</h2>
+<p>Nothing is server-side; like Bronzeman/Tileman this is an honor mode with the client making violations hard to do accidentally. That's proven acceptable to this audience. Feasibility per domain:</p>
+<div class="tablewrap"><table>
+  <tr><th>Domain</th><th>Enforcement mechanism</th><th>Feasibility</th></tr>
+  <tr><td>Items</td><td>Bronzeman techniques: block GE offers, deprioritize/remove <code>Wield/Wear/Eat/Use</code> menu entries via <code>MenuEntryAdded</code>, grey locked items in inventory/bank overlays, block shop buys.</td><td class="good">Proven</td></tr>
+  <tr><td>Regions</td><td>Region Locker techniques: shade locked chunks on map + in-world overlay, alert on entry. Can't stop walking, but visual + "illegal time" tracking works.</td><td class="good">Proven</td></tr>
+  <tr><td>Monsters</td><td>Remove <code>Attack</code> menu entry for locked NPC IDs; overlay lock icon over them.</td><td class="good">Easy</td></tr>
+  <tr><td>Quests</td><td>Alert when starting a locked quest (dialogue/varbit detection); quest-list overlay showing locked/unlocked.</td><td class="med">Honor-heavy</td></tr>
+  <tr><td>Skills</td><td>XP can't be prevented. Track XP gained in locked skills as <strong>void XP</strong> (earns no points, flagged on profile); block-menu common training verbs where possible (e.g. remove <code>Chop down</code> if Woodcutting locked).</td><td class="med">Partial</td></tr>
+  <tr><td>Spells/Prayers</td><td>Overlay locks on spellbook/prayer tab; menu-entry blocking on activation.</td><td class="good">Easy</td></tr>
+  <tr><td>NPCs/shops/teleports</td><td>Menu-entry blocking on <code>Talk-to/Trade</code>; teleports gated by region locks anyway.</td><td class="good">Easy</td></tr>
+</table></div>
+<p class="muted">All of this is standard Plugin Hub territory — restriction plugins (Bronzeman, Tileman, Region Locker) pass review because they only remove capabilities, never automate play.</p>
+
+<h2><span class="num">5</span>The hard problem: the dependency graph</h2>
+<div class="risk">
+  <strong>Softlocks are the #1 design risk.</strong> OSRS content is a dense dependency web: a quest needs items + regions + skill levels; a region is only reachable via another region; a skill is untrainable without its tool items. A naive random draft strands players with nothing playable. This is where most of the design effort goes — everything else is assembly.
+</div>
+<ul>
+  <li><strong>Model content as a graph:</strong> nodes = unlockables, edges = hard requirements. Sources: OSRS Wiki data dumps for quest reqs/item sources; hand-curated region adjacency. This dataset <em>is</em> the product; the plugin is a renderer for it.</li>
+  <li><strong>Bundle unlocks:</strong> unlocking a quest auto-grants its requirement bundle scoped to the quest (quest-only item access, temporary region access for quest steps). Leagues does exactly this. Without bundling, quests are un-draftable.</li>
+  <li><strong>Draft-pool filtering:</strong> only offer options whose prerequisites you own ("adjacent frontier" drafting). This simultaneously fixes coherence and softlocks — you can only be offered things you can actually use.</li>
+  <li><strong>Playability invariant:</strong> after every choice event, assert ≥ N viable point sources remain (something to kill, something to train, somewhere to go). If the check fails, inject a rescue pick.</li>
+  <li><strong>Starter kit:</strong> Lumbridge + Draynor chunks, 2–3 starter skills, bronze-tier + basic food tags, chickens/goblins/cows/rats. Enough for the first hour; first choice event within ~20 minutes so the hook lands early.</li>
+</ul>
+
+<h2><span class="num">6</span>Multiplayer &amp; content-creator angles</h2>
+<ul>
+  <li><strong>Seeded runs:</strong> same seed → same draft offers. Friends/streamers race the same seed with different choices — instant comparison content ("I took Fishing, he took Thieving"). This is the single cheapest high-value feature.</li>
+  <li><strong>Group mode (Crabman-style):</strong> shared point pool, but each unlock is owned by one member → forced specialization and real trade interdependence within the group.</li>
+  <li><strong>Chat-voted choices:</strong> Twitch chat picks the draft option. Trivially marketable.</li>
+  <li><strong>Profile export/share:</strong> a shareable image/URL of your unlock tree ("my build"). Identity + bragging is what made Tileman/Chunkman series work.</li>
+  <li><strong>Compat:</strong> stacks cleanly with Bronzeman (item <em>acquisition</em> rules) and TCG (cosmetic collection) since yours governs <em>access</em> — worth advertising as compatible from day one.</li>
+</ul>
+
+<h2><span class="num">7</span>Technical shape</h2>
+<div class="cols">
+  <div class="card">
+    <h3>Stack</h3>
+    <ul>
+      <li>RuneLite external plugin (Java 11), distributed via Plugin Hub PR like TCG.</li>
+      <li>Key APIs: <code>MenuEntryAdded</code> (blocking), <code>StatChanged</code> (XP points), <code>ActorDeath</code>/NPC loot events (kill points), <code>VarbitChanged</code> (quests), <code>WorldPoint.getRegionID()</code> (chunks), custom side-panel + overlays for the draft UI.</li>
+      <li>Profile = local JSON per account (points, unlocks, seed, choice history), like Bronzeman's unlock file. Cloud sync only if/when group mode ships.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Content data (the real work)</h3>
+    <ul>
+      <li>Item-tag definitions (~300–500 curated tags mapping to item IDs).</li>
+      <li>Monster list with point values (combat level is a fine v1 heuristic — TCG-proven).</li>
+      <li>Chunk adjacency + region metadata (Region Locker's data is a starting point; it's open source, as are the Bronzeman forks).</li>
+      <li>Quest requirement bundles (scrapeable from OSRS Wiki).</li>
+    </ul>
+  </div>
+</div>
+
+<h2><span class="num">8</span>MVP path</h2>
+<div class="tablewrap"><table>
+  <tr><th>Stage</th><th>Scope</th><th>Proves</th></tr>
+  <tr><td><strong>v0.1 — playable core</strong></td><td>Points from XP + kills; escalating thresholds; draft panel (1-of-3, reroll); <em>regions + monsters only</em>, F2P only; starter kit; local profile.</td><td>Is the loop fun for 5–10 hours? Region+monster locking alone is already a compelling mode (Chunkman proves it).</td></tr>
+  <tr><td><strong>v0.2</strong></td><td>Item tags + skill unlocks + void-XP tracking; unlock-tree side panel.</td><td>The full fantasy; enough for a Plugin Hub submission + Reddit post.</td></tr>
+  <tr><td><strong>v0.3</strong></td><td>Quest bundles; members content; curses; seeded runs.</td><td>Depth + creator appeal.</td></tr>
+  <tr><td><strong>v1.0</strong></td><td>Group mode, share cards, chat voting.</td><td>Community flywheel.</td></tr>
+</table></div>
+<p><strong>Sequencing rationale:</strong> regions + monsters first because they're the most enforceable, need the least content curation, and deliver the strongest "my account is unique" feeling per hour of dev work. Item tags are the biggest curation cost — defer until the loop is validated.</p>
+
+<h2><span class="num">9</span>Open risks (honest list)</h2>
+<ol>
+  <li><strong>Content curation volume</strong> — tags/bundles/graph is weeks of data work, not code. Mitigate: F2P-only v1 (~10% of the surface), Wiki scraping, open the data files to community PRs.</li>
+  <li><strong>Softlock edge cases</strong> — quest items arriving while locked, random events, drop trades. Need a "quarantine" state for locked items you receive (holdable, not usable) rather than pretending they don't exist.</li>
+  <li><strong>Meta-solving</strong> — hardcore players will optimize any deterministic system; seeds + weighted drafts keep it fresh, but accept a meta will form.</li>
+  <li><strong>Honor-mode ceiling</strong> — some players bounce off "the client can't really stop me". Bronzeman/Tileman's success says the ceiling is high enough.</li>
+  <li><strong>Plugin Hub review</strong> — restriction-only plugins pass, but the draft UI must not resemble gambling with real stakes (TCG set precedent that even pack-opening is fine).</li>
+</ol>
+
+<h2><span class="num">10</span>Name candidates</h2>
+<p>
+  <span class="chip">Pathlocked</span>
+  <span class="chip">Draftscape</span>
+  <span class="chip">Choiceman Mode</span>
+  <span class="chip">Forkbound</span>
+  <span class="chip">The Chosen Path</span>
+  <span class="chip">Unlocked: OSRS</span>
+</p>
+
+<h2><span class="num">11</span>Verdict</h2>
+<div class="rec">
+  <p><strong>The idea is strong and the timing is right.</strong> TCG just proved the point-economy hook and got Jagex's blessing; Bronzeman/Tileman/Chunkman prove restriction modes retain players for thousands of hours; Leagues proves choice-drafting is the most exciting mechanic in OSRS. The novel combination — <em>earned, chosen, permanent</em> unlocks — genuinely doesn't exist yet.</p>
+  <p><strong>The two make-or-break calls:</strong> (1) draft-with-safety-valves over a free shop, so choices stay dramatic without softlocks; (2) invest in the dependency graph / adjacency-weighted draft pool — it's the unglamorous 60% of the work and the difference between "clever idea" and "playable mode".</p>
+</div>
+
+<p class="muted" style="margin-top:40px">Sources: <a href="https://github.com/Azderi/osrs-tcg">OSRS TCG (GitHub)</a> · <a href="https://secure.runescape.com/m=news/osrs-tcg---the-hottest-new-runelite-plugin?oldschool=1">Jagex newspost on OSRS TCG</a> · <a href="https://github.com/CodePanter/another-bronzeman-mode">Another Bronzeman Mode</a> · <a href="https://github.com/sethrem/bronzeman">Bronzeman (sethrem)</a> · <a href="https://github.com/mvdicarlo/osrs-crabman-mode">Crabman (Group Bronzeman)</a></p>
+</main>

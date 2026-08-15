@@ -1,0 +1,155 @@
+<meta charset="utf-8">
+<title>init-cepqd · v0.1 Plugin Skeleton Plan</title>
+<style>
+  :root {
+    --bg: #f5f3ee; --card: #fffdf8; --ink: #2b2926; --muted: #6e6a62;
+    --line: #e2ddd2; --accent: #7a5c3e; --accent-2: #4a6151; --warn: #8a4b3c;
+    --chip-bg: #efe9dd;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.55 -apple-system, "Helvetica Neue", Segoe UI, sans-serif; padding: 48px 20px 80px; }
+  main { max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 28px; letter-spacing: -0.5px; margin: 0 0 4px; }
+  .subtitle { color: var(--muted); margin: 0 0 32px; }
+  h2 { font-size: 19px; margin: 42px 0 12px; padding-bottom: 6px; border-bottom: 2px solid var(--line); }
+  h2 .num { color: var(--accent); margin-right: 8px; }
+  h3 { font-size: 15.5px; margin: 20px 0 6px; }
+  p { margin: 8px 0; } ul, ol { margin: 8px 0; padding-left: 22px; } li { margin: 4px 0; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px 20px; margin: 14px 0; }
+  .rec { border-left: 4px solid var(--accent-2); background: #f2f4ef; border-radius: 6px; padding: 12px 18px; margin: 14px 0; }
+  .risk { border-left: 4px solid var(--warn); background: #f6efec; border-radius: 6px; padding: 12px 18px; margin: 14px 0; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 14px; background: var(--card); }
+  .tablewrap { overflow-x: auto; }
+  th, td { border: 1px solid var(--line); padding: 8px 12px; text-align: left; vertical-align: top; }
+  th { background: var(--chip-bg); font-weight: 600; }
+  code { background: var(--chip-bg); border-radius: 4px; padding: 1px 5px; font: 13px ui-monospace, "SF Mono", Menlo, monospace; }
+  pre { background: #2e2b27; color: #e8e3d8; border-radius: 8px; padding: 14px 18px; overflow-x: auto;
+    font: 12.5px/1.5 ui-monospace, "SF Mono", Menlo, monospace; }
+  pre .c { color: #9a937f; }
+  .muted { color: var(--muted); }
+</style>
+
+<main>
+<h1>v0.1 Plugin Skeleton Plan</h1>
+<p class="subtitle">Choice-unlock gamemode · RuneLite external plugin · approved scope: draft 1-of-3 + reroll · F2P regions + monsters only</p>
+
+<h2><span class="num">1</span>Scope lock (what v0.1 is and isn't)</h2>
+<div class="card">
+  <p><strong>In:</strong> point accrual from XP + kills · escalating thresholds · seeded 1-of-3 draft with 1 reroll per event · region locks (map-square granularity) + monster locks · starter kit · enforcement overlays + menu stripping · side panel · per-account JSON profile.</p>
+  <p><strong>Out (deferred):</strong> item tags, skill locks, quests, curses, diminishing XP returns (flat rates v0.1), group mode, cloud sync, members content.</p>
+</div>
+
+<h2><span class="num">2</span>Foundation</h2>
+<ul>
+  <li>Scaffold from <code>runelite/example-plugin</code> template (Gradle, Java 11, RuneLite client dep from <code>repo.runelite.net</code>). Pull the latest template at scaffold time — it moves.</li>
+  <li>Plugin Hub metadata (<code>runelite-plugin.properties</code> + <code>icon.png</code>) included from day one so submission is a PR, not a refactor.</li>
+  <li>Working name: display name <strong>"Pathlocked"</strong>, package <code>com.pathlocked</code>, config group <code>pathlocked</code>. Renaming later is cheap until Hub submission — after that the config group is frozen (it keys user settings).</li>
+  <li><strong>Region granularity = map squares</strong> (64×64 tiles, <code>WorldPoint.getRegionID()</code>) — same as Region Locker. F2P surface is ~100–130 squares; big enough to feel meaningful, small enough to curate.</li>
+</ul>
+
+<h2><span class="num">3</span>Repo layout &amp; class responsibilities</h2>
+<pre>
+osrs-mod-choice-rpg/
+├── build.gradle · settings.gradle · gradle/wrapper/
+├── runelite-plugin.properties · icon.png
+├── docs/                          <span class="c">← design + this plan</span>
+└── src/main/
+    ├── resources/com/pathlocked/
+    │   ├── regions.json           <span class="c">F2P map squares: names, adjacency, tier</span>
+    │   ├── monsters.json          <span class="c">F2P NPC ids, combat lvl, home regions</span>
+    │   └── starter_kit.json       <span class="c">initial unlocks</span>
+    ├── test/java/com/pathlocked/
+    │   ├── PathlockedPluginTest.java  <span class="c">dev-loop main (ExternalPluginManager)</span>
+    │   ├── DraftServiceTest.java · ThresholdCurveTest.java · ContentDataTest.java
+    └── java/com/pathlocked/
+        ├── PathlockedPlugin.java      <span class="c">lifecycle + event subscriptions only</span>
+        ├── PathlockedConfig.java      <span class="c">@ConfigGroup: toggles, point rates</span>
+        ├── points/
+        │   ├── PointsService.java     <span class="c">XP/kill → points; emits ThresholdReached</span>
+        │   └── ThresholdCurve.java    <span class="c">pure function: choiceIndex → cost</span>
+        ├── draft/
+        │   ├── DraftService.java      <span class="c">seeded candidate rolls, weighting, reroll</span>
+        │   └── DraftOption.java       <span class="c">REGION | MONSTER + target id</span>
+        ├── unlocks/
+        │   ├── UnlockState.java       <span class="c">owned sets + choice history (in-memory)</span>
+        │   └── ProfileManager.java    <span class="c">load/save JSON per accountHash</span>
+        ├── content/
+        │   └── ContentRepository.java <span class="c">loads/validates the 3 JSON resources</span>
+        ├── enforcement/
+        │   ├── RegionLockOverlay.java <span class="c">world + world-map shading</span>
+        │   ├── MonsterLockEnforcer.java <span class="c">strip Attack via MenuEntryAdded</span>
+        │   └── ViolationTracker.java  <span class="c">time-in-locked-region, illegal kills</span>
+        └── ui/
+            ├── PathlockedPanel.java   <span class="c">side panel: points bar, unlocks, log</span>
+            ├── DraftOverlay.java      <span class="c">in-game 3-card choice prompt</span>
+            └── DraftCardComponent.java
+</pre>
+<p><strong>Dependency rule:</strong> <code>points/ draft/ content/ unlocks/</code> are plain Java with no RuneLite imports (pure logic, unit-testable off-client); only <code>enforcement/ ui/</code> and the plugin class touch client APIs. This is what keeps the softlock-sensitive logic testable.</p>
+
+<h2><span class="num">4</span>Runtime event wiring</h2>
+<div class="tablewrap"><table>
+  <tr><th>RuneLite event</th><th>Handler</th><th>Behavior</th></tr>
+  <tr><td><code>GameStateChanged</code> (LOGGED_IN)</td><td>ProfileManager</td><td>Load profile by <code>client.getAccountHash()</code>; first login → seed profile + starter kit + welcome.</td></tr>
+  <tr><td><code>StatChanged</code></td><td>PointsService</td><td>XP delta → points (flat rate, TCG-style: 100 pts / 1k XP). Diff vs cached XP map to ignore login re-fires.</td></tr>
+  <tr><td><code>NpcLootReceived</code></td><td>PointsService</td><td>Kill credit = NPC combat level (fires only for your kills — solves attribution). Locked monster → 0 points + violation log.</td></tr>
+  <tr><td><code>MenuEntryAdded</code></td><td>MonsterLockEnforcer</td><td>Remove/deprioritize <code>Attack</code> on locked NPC ids (config: hard-remove vs left-click-deprioritize).</td></tr>
+  <tr><td><code>GameTick</code></td><td>ViolationTracker</td><td>Current regionID vs unlocked set → on-screen "locked region" banner + timer. Cheap check, no scan.</td></tr>
+  <tr><td>ThresholdReached (internal)</td><td>DraftService → DraftOverlay</td><td>Roll 3 options, show cards; pick/reroll/bank. Result → UnlockState → ProfileManager.save().</td></tr>
+</table></div>
+<p><strong>Persistence:</strong> JSON file at <code>~/.runelite/pathlocked/&lt;accountHash&gt;.json</code> (Bronzeman pattern), saved on every state change + logout. Gson is already on the client classpath.</p>
+
+<h2><span class="num">5</span>Data schemas</h2>
+<div class="tablewrap"><table>
+  <tr><th>File</th><th>Shape (abridged)</th><th>Notes</th></tr>
+  <tr><td><code>regions.json</code></td><td><code>{id: 12850, name: "Lumbridge", adjacent: [12849, 12851, ...], tier: 1}</code></td><td>The curation task. Tier = rough danger/progression band used for draft weighting.</td></tr>
+  <tr><td><code>monsters.json</code></td><td><code>{ids: [3029, 3030], name: "Goblin", combatLevel: 2, regions: [12850], tier: 1}</code></td><td>Group NPC id variants under one unlockable. Scrape base list from OSRS Wiki, hand-fix.</td></tr>
+  <tr><td><code>starter_kit.json</code></td><td><code>{regions: [Lumbridge, Draynor, ...], monsters: [chicken, cow, goblin, rat]}</code></td><td>Tuned so first draft lands ≤ 20 min in.</td></tr>
+  <tr><td>profile JSON</td><td><code>{seed, points, spentPoints, choiceIndex, unlockedRegions[], unlockedMonsters[], history[], violations[]}</code></td><td><code>history</code> stores every offer + pick + rerolls → auditability and future share-card feature.</td></tr>
+</table></div>
+
+<h2><span class="num">6</span>Draft algorithm (deterministic core)</h2>
+<div class="card">
+  <ol>
+    <li>Candidates = frontier only: regions adjacent to an unlocked region; monsters whose home region is unlocked (or arrives with the drafted region). <em>This is the softlock guard.</em></li>
+    <li>Weight by tier distance from the player's current band (adjacent tier favored, +1 stretch option possible).</li>
+    <li>RNG = <code>new Random(seed ^ choiceIndex ^ rerollCount)</code> → offers are reproducible from the profile alone; reroll is deterministic too (seeded-run feature falls out for free).</li>
+    <li>Category wheel: alternate region-event / monster-event; every 5th event = free pick from the frontier.</li>
+    <li><strong>Playability invariant</strong> after every unlock: ≥ 3 attackable monster types and ≥ 1 draftable frontier region remain, else inject a rescue option. Enforced in <code>DraftService</code>, unit-tested by simulating 500 full runs across random seeds.</li>
+  </ol>
+</div>
+
+<h2><span class="num">7</span>Build order</h2>
+<div class="tablewrap"><table>
+  <tr><th>#</th><th>Task</th><th>Effort</th><th>Done when</th></tr>
+  <tr><td>1</td><td>Scaffold template, rename, Hub metadata, dev-loop test main</td><td>S</td><td><code>./gradlew build</code> green; plugin loads in local client.</td></tr>
+  <tr><td>2</td><td>Content data: <code>regions.json</code> (F2P adjacency) + <code>monsters.json</code> + validator test</td><td>M–L</td><td>Every region reachable from Lumbridge; every monster's home region exists. <em>Longest task — it's curation.</em></td></tr>
+  <tr><td>3</td><td>PointsService + ThresholdCurve (+ unit tests)</td><td>S</td><td>XP/kills print accruing points in-game; curve tuned on paper.</td></tr>
+  <tr><td>4</td><td>UnlockState + ProfileManager (persistence round-trip)</td><td>S</td><td>Relog restores state; corrupt file → safe re-init with backup.</td></tr>
+  <tr><td>5</td><td>DraftService (seeded, weighted, invariant) + simulation test</td><td>M</td><td>500-seed simulation: zero softlocks, sane pacing histogram.</td></tr>
+  <tr><td>6</td><td>Enforcement: region shading, Attack-stripping, violation banner</td><td>M</td><td>Locked chunk visibly shaded on map + in world; can't left-click-attack locked NPC.</td></tr>
+  <tr><td>7</td><td>UI: draft overlay cards + side panel</td><td>M</td><td>Full loop playable: earn → prompt → pick/reroll → unlock visible.</td></tr>
+  <tr><td>8</td><td>Playtest pass on a fresh F2P account + tune curve/starter kit</td><td>M</td><td>First hour feels good; first draft ≤ 20 min; write findings back to docs.</td></tr>
+</table></div>
+<p>Order rationale: 2 and 3–5 are parallelizable (data vs logic); 5 depends on 2's schema, not its full contents (test with a stub map early). Everything client-facing (6–7) lands after the logic core is unit-tested.</p>
+
+<h2><span class="num">8</span>Dev &amp; test loop</h2>
+<ul>
+  <li><code>PathlockedPluginTest#main</code> launches a local RuneLite with the plugin injected (template-standard) — the daily dev loop.</li>
+  <li>Pure-logic packages get real unit tests (JUnit, no client mocks): curve values, draft determinism, softlock simulation, JSON validation.</li>
+  <li>Manual QA checklist lives in <code>docs/</code>: fresh account, relog persistence, locked-NPC menu, map shading, reroll determinism.</li>
+</ul>
+
+<h2><span class="num">9</span>Defaults I chose (veto if wrong)</h2>
+<ol>
+  <li>Working name <strong>Pathlocked</strong> (package/config-group); trivially renameable until Hub submission.</li>
+  <li>Map-square (64×64) region granularity, not 8×8 chunks — matches Region Locker, 10× less curation.</li>
+  <li>Flat point rates in v0.1 (TCG's proven numbers as the starting tune); diminishing returns deferred to v0.2.</li>
+  <li>File-based profiles under <code>~/.runelite/pathlocked/</code>, not ConfigManager blobs — structured data, easy manual rescue.</li>
+  <li>Draft prompt as in-game overlay cards (not just side panel) — the choice moment is the product; it should interrupt.</li>
+</ol>
+
+<div class="risk"><strong>Known unknown:</strong> exact template/API details (event names, panel APIs) drift between RuneLite releases — task 1 includes reconciling this plan against the current <code>example-plugin</code> and client javadocs before any code is written on top.</div>
+
+<div class="rec"><strong>Definition of done for v0.1:</strong> a fresh F2P account can play a full session where every unlock they have came from a draft; state survives relog; a 500-seed simulation shows no softlocks; repo builds clean and is structurally ready for a Plugin Hub PR.</div>
+</main>
