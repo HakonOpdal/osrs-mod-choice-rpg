@@ -39,6 +39,11 @@ tasks.register('run', JavaExec) {
 	classpath = sourceSets.test.runtimeClasspath
 	mainClass = pluginMainClass
 
-	jvmArgs "-ea"
+	// On macOS with JDK 16+, RuneLite's OSXFullScreenAdapter needs com.apple.eawt
+	// exported or startup dies with IllegalAccessError (the packaged client ships
+	// these flags; the dev run task must add them itself).
+	jvmArgs "-ea",
+		"--add-exports", "java.desktop/com.apple.eawt=ALL-UNNAMED",
+		"--add-opens", "java.desktop/com.apple.eawt=ALL-UNNAMED"
 	args "--developer-mode", "--debug"
 }
