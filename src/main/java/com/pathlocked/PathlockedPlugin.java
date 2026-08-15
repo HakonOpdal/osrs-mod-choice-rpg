@@ -16,7 +16,11 @@ import com.pathlocked.unlocks.ProfileManager;
 import com.pathlocked.unlocks.ProfileState;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.ChatMessageType;
@@ -25,8 +29,10 @@ import net.runelite.api.GameState;
 import net.runelite.api.NPC;
 import net.runelite.api.Player;
 import net.runelite.api.Skill;
+import net.runelite.api.events.ActorDeath;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
+import net.runelite.api.events.HitsplatApplied;
 import net.runelite.api.events.MenuEntryAdded;
 import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.api.events.StatChanged;
@@ -129,7 +135,31 @@ public class PathlockedPlugin extends Plugin implements PathlockedPanel.Actions
 		dirty = false;
 		if (needsSave)
 		{
-			clientThread.invoke(() -> profileManager.save(accountHash, profileToSave));
+			// Serialize on the client thread (mutations happen there), but wait
+			// briefly so a client shutdown can't kill the queued write.
+			CountDownLatch saved = new CountDownLatch(1);
+			clientThread.invoke(() ->
+			{
+				try
+				{
+					profileManager.save(accountHash, profileToSave);
+				}
+				finally
+				{
+					saved.countDown();
+				}
+			});
+			try
+			{
+				if (!saved.await(2, TimeUnit.SECONDS))
+				{
+					log.warn("Timed out waiting for the final Pathlocked profile save");
+				}
+			}
+			catch (InterruptedException e)
+			{
+				Thread.currentThread().interrupt();
+			}
 		}
 		overlayManager.remove(regionOverlay);
 		overlayManager.remove(statusOverlay);
@@ -156,8 +186,23 @@ public class PathlockedPlugin extends Plugin implements PathlockedPanel.Actions
 			case LOGIN_SCREEN:
 			case HOPPING:
 				saveProfile();
+				if (dirty)
+				{
+					// One retry on a failed final write; the profile must still be
+					// dropped afterwards so state never leaks across accounts.
+					saveProfile();
+				}
+				if (dirty)
+				{
+					log.error("Pathlocked profile could not be saved on logout; this session's progress may be lost");
+					dirty = false;
+				}
 				profile = null;
 				pointsService.reset();
+				// NPC indexes and the tick counter don't survive a world change;
+				// stale entries would misattribute kills on the next world.
+				damagedNpcs.clear();
+				recentKillCredits.clear();
 				lastAnnouncedStatus = RegionStatus.UNLOCKED;
 				refreshPanel();
 				break;
@@ -179,6 +224,19 @@ public class PathlockedPlugin extends Plugin implements PathlockedPanel.Actions
 		}
 
 		trackCurrentRegion();
+
+		int tick = client.getTickCount();
+		if (!recentKillCredits.isEmpty())
+		{
+			recentKillCredits.values().removeIf(creditedTick -> tick - creditedTick > 10);
+		}
+		if (!damagedNpcs.isEmpty())
+		{
+			// Short window: stale damage must not claim someone else's kill.
+			// True ownership isn't client-derivable without loot, so recent own
+			// damage is the accepted attribution heuristic.
+			damagedNpcs.values().removeIf(damagedTick -> tick - damagedTick > 25);
+		}
 
 		if (draftService.maybeStartDraft(profile))
 		{
@@ -204,10 +262,11 @@ public class PathlockedPlugin extends Plugin implements PathlockedPanel.Actions
 		{
 			return;
 		}
-		if (currentRegionStatus == RegionStatus.LOCKED)
+		if (liveRegionStatus() != RegionStatus.UNLOCKED)
 		{
-			// Trespassing earns nothing, same as kills, or locked regions would
-			// be a free skilling loophole in the point economy.
+			// XP only counts on unlocked ground: LOCKED is trespassing, and
+			// UNCHARTED (members areas, data gaps) would otherwise be a free
+			// skilling loophole in the point economy.
 			return;
 		}
 		int buffered = profile.xpRemainder + xpDelta;
@@ -221,6 +280,46 @@ public class PathlockedPlugin extends Plugin implements PathlockedPanel.Actions
 		}
 	}
 
+	/**
+	 * NPC index -> tick the kill was credited on; dedupes the death-event and
+	 * loot-event credit paths (loot arrives on/after the death tick).
+	 */
+	private final Map<Integer, Integer> recentKillCredits = new HashMap<>();
+
+	/**
+	 * NPC index -> tick of the local player's last own hitsplat on it. Interaction
+	 * alone can't attribute kills in multicombat; our own damage can.
+	 */
+	private final Map<Integer, Integer> damagedNpcs = new HashMap<>();
+
+	@Subscribe
+	public void onHitsplatApplied(HitsplatApplied event)
+	{
+		if (event.getActor() instanceof NPC && event.getHitsplat().isMine())
+		{
+			damagedNpcs.put(((NPC) event.getActor()).getIndex(), client.getTickCount());
+		}
+	}
+
+	@Subscribe
+	public void onActorDeath(ActorDeath event)
+	{
+		if (profile == null || !(event.getActor() instanceof NPC))
+		{
+			return;
+		}
+		// Death-event credit path: covers listed monsters with empty drop tables
+		// (Spider, Giant spider, ...), which never emit NpcLootReceived. Only
+		// NPCs the player personally damaged count.
+		NPC npc = (NPC) event.getActor();
+		if (damagedNpcs.remove(npc.getIndex()) == null)
+		{
+			return;
+		}
+		recentKillCredits.put(npc.getIndex(), client.getTickCount());
+		creditKill(npc);
+	}
+
 	@Subscribe
 	public void onNpcLootReceived(NpcLootReceived event)
 	{
@@ -229,6 +328,15 @@ public class PathlockedPlugin extends Plugin implements PathlockedPanel.Actions
 			return;
 		}
 		NPC npc = event.getNpc();
+		if (recentKillCredits.remove(npc.getIndex()) != null)
+		{
+			return;
+		}
+		creditKill(npc);
+	}
+
+	private void creditKill(NPC npc)
+	{
 		String name = npc.getName() == null ? null : Text.removeTags(npc.getName());
 		if (name == null || !content.isListedMonster(name))
 		{
@@ -241,8 +349,11 @@ public class PathlockedPlugin extends Plugin implements PathlockedPanel.Actions
 			profile.illegalKills++;
 			announce(name + " is locked - that kill earned no points.");
 		}
-		else if (currentRegionStatus == RegionStatus.LOCKED)
+		else if (liveRegionStatus() == RegionStatus.LOCKED)
 		{
+			// Kills only reject LOCKED (trespass), not UNCHARTED: many listed
+			// monsters live in dungeons/caves the region data doesn't cover, and
+			// the monster unlock itself already gates the credit.
 			announce("No points while trespassing in a locked region.");
 		}
 		else
@@ -334,6 +445,21 @@ public class PathlockedPlugin extends Plugin implements PathlockedPanel.Actions
 		});
 	}
 
+	/**
+	 * Status of the region the player is standing in right now. The cached
+	 * currentRegionStatus is only refreshed on GameTick, which lags events
+	 * fired on the same tick as a boundary crossing or teleport.
+	 */
+	private RegionStatus liveRegionStatus()
+	{
+		Player player = client.getLocalPlayer();
+		if (player == null)
+		{
+			return currentRegionStatus;
+		}
+		return regionStatus(player.getWorldLocation().getRegionID());
+	}
+
 	public RegionStatus regionStatus(int regionId)
 	{
 		if (profile == null || content == null)
@@ -342,6 +468,14 @@ public class PathlockedPlugin extends Plugin implements PathlockedPanel.Actions
 		}
 		if (!content.isKnownRegion(regionId))
 		{
+			// Underground map squares sit 6400 tiles north of their surface
+			// square, i.e. region ry + 100; let dungeons (Dwarven Mine, Varrock
+			// sewers, ...) inherit the surface square's lock status.
+			int surfaceId = regionId - 100;
+			if ((regionId & 0xFF) >= 100 && content.isKnownRegion(surfaceId))
+			{
+				return profile.isRegionUnlocked(surfaceId) ? RegionStatus.UNLOCKED : RegionStatus.LOCKED;
+			}
 			return RegionStatus.UNCHARTED;
 		}
 		return profile.isRegionUnlocked(regionId) ? RegionStatus.UNLOCKED : RegionStatus.LOCKED;
@@ -399,6 +533,12 @@ public class PathlockedPlugin extends Plugin implements PathlockedPanel.Actions
 		// and first-event priming would swallow the next real XP gain per skill.
 		for (Skill skill : Skill.values())
 		{
+			if (skill == Skill.OVERALL)
+			{
+				// Synthetic total, not in the client's experience array:
+				// querying it throws and would abort the profile load.
+				continue;
+			}
 			pointsService.prime(skill, client.getSkillExperience(skill));
 		}
 		if (profileManager.isCreatedNewProfile())
@@ -418,9 +558,7 @@ public class PathlockedPlugin extends Plugin implements PathlockedPanel.Actions
 		int regionId = player.getWorldLocation().getRegionID();
 		RegionStatus status = regionStatus(regionId);
 		currentRegionStatus = status;
-		currentRegionName = content.isKnownRegion(regionId)
-			? content.regionById(regionId).getName()
-			: "Uncharted (" + regionId + ")";
+		currentRegionName = regionNameFor(regionId);
 
 		if (status == RegionStatus.LOCKED)
 		{
@@ -435,6 +573,22 @@ public class PathlockedPlugin extends Plugin implements PathlockedPanel.Actions
 			}
 			lastAnnouncedStatus = status;
 		}
+	}
+
+	private String regionNameFor(int regionId)
+	{
+		if (content.isKnownRegion(regionId))
+		{
+			return content.regionById(regionId).getName();
+		}
+		// Same surface normalization as regionStatus, so a locked dungeon warns
+		// with its surface region's name instead of "Uncharted".
+		int surfaceId = regionId - 100;
+		if ((regionId & 0xFF) >= 100 && content.isKnownRegion(surfaceId))
+		{
+			return content.regionById(surfaceId).getName() + " (underground)";
+		}
+		return "Uncharted (" + regionId + ")";
 	}
 
 	private void announce(String message)

@@ -24,7 +24,7 @@ import net.runelite.client.ui.overlay.OverlayPosition;
 public class RegionLockOverlay extends Overlay
 {
 	private static final int RADIUS = 10;
-	private static final Color LOCKED_FILL = new Color(138, 75, 60, 45);
+	private static final Color LOCKED_FILL = new Color(138, 75, 60, 80);
 
 	private final Client client;
 	private final PathlockedPlugin plugin;

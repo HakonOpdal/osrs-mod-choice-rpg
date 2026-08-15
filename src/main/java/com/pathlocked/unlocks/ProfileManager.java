@@ -3,8 +3,11 @@ package com.pathlocked.unlocks;
 import com.google.gson.Gson;
 import com.pathlocked.content.ContentRepository;
 import com.pathlocked.content.RegionDef;
+import com.pathlocked.points.ThresholdCurve;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -49,7 +52,7 @@ public class ProfileManager
 				ProfileState state = gson.fromJson(json, ProfileState.class);
 				if (state != null && state.unlockedRegions != null && !state.unlockedRegions.isEmpty())
 				{
-					return state;
+					return normalize(state);
 				}
 				log.warn("Profile file {} parsed to an empty state; recreating", file);
 			}
@@ -66,10 +69,35 @@ public class ProfileManager
 		return state;
 	}
 
+	/**
+	 * Repairs null fields in a hand-edited or partially corrupt but parseable
+	 * profile, so one bad field degrades gracefully instead of NPE-ing every login.
+	 */
+	private static ProfileState normalize(ProfileState state)
+	{
+		if (state.unlockedMonsters == null)
+		{
+			state.unlockedMonsters = new LinkedHashSet<>();
+		}
+		if (state.history == null)
+		{
+			state.history = new ArrayList<>();
+		}
+		if (state.pendingDraft != null
+			&& (state.pendingDraft.offers == null || state.pendingDraft.offers.isEmpty()))
+		{
+			state.pendingDraft = null;
+		}
+		return state;
+	}
+
 	private ProfileState createProfile(ContentRepository content, long seed)
 	{
 		ProfileState state = new ProfileState();
 		state.seed = seed;
+		// New runs start with the first threshold already banked so the very
+		// first login opens a draft — a taste of the loop before the grind.
+		state.totalPoints = ThresholdCurve.cost(0);
 		for (String regionName : content.getStarterRegions())
 		{
 			RegionDef region = content.regionByName(regionName);

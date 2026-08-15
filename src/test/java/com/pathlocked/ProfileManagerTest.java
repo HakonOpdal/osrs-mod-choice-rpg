@@ -2,6 +2,7 @@ package com.pathlocked;
 
 import com.google.gson.Gson;
 import com.pathlocked.content.ContentRepository;
+import com.pathlocked.points.ThresholdCurve;
 import com.pathlocked.unlocks.ProfileManager;
 import com.pathlocked.unlocks.ProfileState;
 import java.io.File;
@@ -30,6 +31,8 @@ public class ProfileManagerTest
 		ProfileState created = manager.loadOrCreate(123L, content, 999L);
 		assertTrue(manager.isCreatedNewProfile());
 		assertEquals(999L, created.seed);
+		assertEquals("New profiles bank the first threshold for an instant first draft",
+			ThresholdCurve.cost(0), created.totalPoints);
 		assertEquals(content.getStarterRegions().size(), created.unlockedRegions.size());
 		assertEquals(content.getStarterMonsters().size(), created.unlockedMonsters.size());
 
