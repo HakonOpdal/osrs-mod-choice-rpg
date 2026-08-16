@@ -11,6 +11,8 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import json
+import os
 
 import generate_item_tags
 import verify_monsters
@@ -25,6 +27,11 @@ def main() -> None:
 
     client = WikiClient(use_cache=not arguments.no_cache, refresh=arguments.refresh)
 
+    # Ensure the output directory exists before the first write — the documented
+    # end-to-end command must work from a clean/cleared out/ directory.
+    os.makedirs(os.path.dirname(verify_monsters.OUTPUT_PATH), exist_ok=True)
+    os.makedirs(os.path.dirname(generate_item_tags.OUTPUT_PATH), exist_ok=True)
+
     print("== [1/2] Verifying monsters.json ==")
     report = verify_monsters.build_report(client)
     with open(verify_monsters.OUTPUT_PATH, "w", encoding="utf-8") as report_file:
@@ -32,11 +39,7 @@ def main() -> None:
     print(f"   wrote {verify_monsters.OUTPUT_PATH}")
 
     print("== [2/2] Generating item-tag candidates ==")
-    import json
-    import os
-
     output = generate_item_tags.build_output(client)
-    os.makedirs(os.path.dirname(generate_item_tags.OUTPUT_PATH), exist_ok=True)
     with open(generate_item_tags.OUTPUT_PATH, "w", encoding="utf-8") as output_file:
         json.dump(output, output_file, indent=2, ensure_ascii=False)
         output_file.write("\n")
