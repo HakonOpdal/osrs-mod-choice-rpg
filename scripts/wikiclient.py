@@ -116,6 +116,11 @@ class WikiClient:
         self._last_live_request_time = 0.0
         self.live_request_count = 0
         self.cache_hit_count = 0
+        # In-memory memo of successful payloads fetched during THIS run, keyed by
+        # URL. Dedupes identical requests within a single run — notably under
+        # --refresh, where the on-disk cache is bypassed but the same category is
+        # still requested many times (once per tier + per slot).
+        self._session_cache: dict = {}
         if self.use_cache:
             os.makedirs(CACHE_DIRECTORY, exist_ok=True)
 
@@ -131,10 +136,17 @@ class WikiClient:
         url = API_ENDPOINT + "?" + urllib.parse.urlencode(query_parameters)
         cache_path = self._cache_path_for(url)
 
+        # Same URL already fetched this run → reuse it (covers --refresh dedup).
+        if self.use_cache and url in self._session_cache:
+            self.cache_hit_count += 1
+            return self._session_cache[url]
+
         if self.use_cache and not self.refresh and os.path.exists(cache_path):
             self.cache_hit_count += 1
             with open(cache_path, "r", encoding="utf-8") as cache_file:
-                return json.load(cache_file)
+                payload = json.load(cache_file)
+            self._session_cache[url] = payload
+            return payload
 
         payload = self._fetch_live_with_retries(url)
 
@@ -143,6 +155,7 @@ class WikiClient:
         # re-raise from a live call. Callers still receive the payload and decide
         # how to react (e.g. bucket_query raises WikiQueryError on `error`).
         if self.use_cache and not (isinstance(payload, dict) and "error" in payload):
+            self._session_cache[url] = payload
             with open(cache_path, "w", encoding="utf-8") as cache_file:
                 json.dump(payload, cache_file)
         return payload
