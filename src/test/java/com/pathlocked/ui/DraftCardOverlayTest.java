@@ -2,8 +2,12 @@ package com.pathlocked.ui;
 
 import com.pathlocked.draft.DraftCategory;
 import com.pathlocked.draft.DraftOption;
+import java.awt.Canvas;
+import java.awt.Component;
 import java.awt.Graphics2D;
+import java.awt.Point;
 import java.awt.Rectangle;
+import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.ArrayList;
@@ -167,6 +171,64 @@ public class DraftCardOverlayTest
 			new RecordingActions(), "small-client.png");
 		assertNotNull(rendered.surface);
 		assertEquals(4, rendered.clickables.size());
+	}
+
+	@Test
+	public void sixCardDraftStaysOnScreenAtSmallClientSize()
+	{
+		List<DraftOption> offers = Arrays.asList(
+			region("Varrock", 1), monster("Goblin", 1, 2), region("Wilderness", 6),
+			monster("Abyssal demon", 5, 124), region("Fossil Island", 4), monster("Zulrah", 6, 725));
+		int w = 520;
+		int h = 340;
+		DraftCardOverlay.Rendered rendered = render(w, h, snapshot(offers, 1, 4),
+			new RecordingActions(), "free-6-small.png");
+
+		Rectangle canvas = new Rectangle(0, 0, w, h);
+		assertTrue("surface must fit the canvas", canvas.contains(rendered.surface));
+		// All 6 cards + reroll pill must be reachable (fully on-screen).
+		assertEquals(7, rendered.clickables.size());
+		for (DraftCardOverlay.Clickable clickable : rendered.clickables)
+		{
+			assertTrue("clickable off-screen: " + clickable.bounds, canvas.contains(clickable.bounds));
+		}
+	}
+
+	@Test
+	public void onlyLeftClickCommitsAChoice()
+	{
+		List<DraftOption> offers = Arrays.asList(
+			region("Varrock", 1), monster("Goblin", 1, 2), region("Karamja", 3));
+		RecordingActions actions = new RecordingActions();
+		DraftCardOverlay overlay = new DraftCardOverlay(null, actions);
+		PanelSnapshot snap = snapshot(offers, 1, 0);
+		overlay.setSnapshot(snap);
+
+		// Prime the hit map exactly as a render would.
+		BufferedImage image = new BufferedImage(765, 503, BufferedImage.TYPE_INT_ARGB);
+		Graphics2D g = image.createGraphics();
+		DraftCardOverlay.Rendered rendered = DraftCardOverlay.paint(g, 765, 503, snap, FONTS, actions, -1);
+		g.dispose();
+		overlay.applyRender(rendered);
+
+		Rectangle firstCard = rendered.clickables.get(0).bounds;
+		Point center = new Point(firstCard.x + firstCard.width / 2, firstCard.y + firstCard.height / 2);
+		Component source = new Canvas();
+
+		MouseEvent right = press(source, center, MouseEvent.BUTTON3);
+		overlay.getMouseListener().mousePressed(right);
+		assertEquals("right-click must not pick", -1, actions.pickIndex);
+		assertTrue("right-click on a card must be consumed (no click-through)", right.isConsumed());
+
+		MouseEvent left = press(source, center, MouseEvent.BUTTON1);
+		overlay.getMouseListener().mousePressed(left);
+		assertEquals("left-click picks the card", 0, actions.pickIndex);
+		assertTrue(left.isConsumed());
+	}
+
+	private static MouseEvent press(Component source, Point at, int button)
+	{
+		return new MouseEvent(source, MouseEvent.MOUSE_PRESSED, 0L, 0, at.x, at.y, 1, false, button);
 	}
 
 	@Test

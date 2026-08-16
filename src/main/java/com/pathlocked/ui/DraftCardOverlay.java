@@ -173,10 +173,15 @@ public class DraftCardOverlay extends Overlay implements DraftCardPresenter
 			fonts = Fonts.resolve();
 		}
 
-		Rendered rendered = paint(graphics, canvasW, canvasH, snap, fonts, actions, hoveredIndex);
+		applyRender(paint(graphics, canvasW, canvasH, snap, fonts, actions, hoveredIndex));
+		return null;
+	}
+
+	/** Publish a freshly painted hit map to the mouse thread. */
+	void applyRender(Rendered rendered)
+	{
 		this.clickables = rendered.clickables;
 		this.surface = rendered.surface;
-		return null;
 	}
 
 	// ---- rendering ---------------------------------------------------------
@@ -198,30 +203,38 @@ public class DraftCardOverlay extends Overlay implements DraftCardPresenter
 		int gridH = rows * CARD_H + (rows - 1) * CARD_GAP;
 
 		int totalH = TITLE_BAND + gridH + REROLL_BAND;
-		int gridLeft = (canvasW - gridW) / 2;
-		int top = Math.max(MARGIN, (canvasH - totalH) / 2);
-		int gridTop = top + TITLE_BAND;
+
+		// Everything below is laid out in a "design space" whose origin is the
+		// top-left of the card surface; a single scale+translate transform then
+		// centers it on the canvas and shrinks it to fit when the unscaled
+		// surface is taller/wider than the client (e.g. a 6-card FREE draft on a
+		// small client), so no card or the reroll pill can fall off-screen.
+		int surfaceW = Math.max(gridW, 260) + 28;
+		int surfaceH = totalH + 16;
+		int contentTop = 8;
+		int gridTop = contentTop + TITLE_BAND;
+
+		double scale = fitScale(surfaceW, surfaceH, canvasW, canvasH);
+		double offsetX = (canvasW - surfaceW * scale) / 2.0;
+		double offsetY = (canvasH - surfaceH * scale) / 2.0;
 
 		Graphics2D g = (Graphics2D) graphics.create();
 		try
 		{
 			g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 			g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+			g.translate(offsetX, offsetY);
+			g.scale(scale, scale);
 
-			Rectangle surface = new Rectangle(
-				Math.min(gridLeft, (canvasW - 260) / 2) - 14,
-				top - 8,
-				Math.max(gridW, 260) + 28,
-				totalH + 16);
 			g.setColor(SCRIM);
-			g.fill(new RoundRectangle2D.Float(surface.x, surface.y, surface.width, surface.height, 22, 22));
+			g.fill(new RoundRectangle2D.Float(0, 0, surfaceW, surfaceH, 22, 22));
 
 			// Title band.
 			g.setFont(fonts.title);
-			drawCentered(g, "CHOOSE YOUR UNLOCK", canvasW / 2, top + 16, TITLE_GOLD);
+			drawCentered(g, "CHOOSE YOUR UNLOCK", surfaceW / 2, contentTop + 16, TITLE_GOLD);
 			g.setFont(fonts.small);
 			String sub = "Choice " + (snap.getChoiceIndex() + 1) + "   ·   click a card to unlock it";
-			drawCentered(g, sub, canvasW / 2, top + 34, SUBTLE);
+			drawCentered(g, sub, surfaceW / 2, contentTop + 34, SUBTLE);
 
 			List<Clickable> clickables = new ArrayList<>();
 			for (int i = 0; i < count; i++)
@@ -230,7 +243,7 @@ public class DraftCardOverlay extends Overlay implements DraftCardPresenter
 				int col = i % columns;
 				int inRow = Math.min(columns, count - row * columns);
 				int rowW = inRow * CARD_W + (inRow - 1) * CARD_GAP;
-				int rowLeft = (canvasW - rowW) / 2;
+				int rowLeft = (surfaceW - rowW) / 2;
 				int x = rowLeft + col * (CARD_W + CARD_GAP);
 				int y = gridTop + row * (CARD_H + CARD_GAP);
 
@@ -239,7 +252,7 @@ public class DraftCardOverlay extends Overlay implements DraftCardPresenter
 
 				final int index = i;
 				final String expectedName = option.getName();
-				clickables.add(new Clickable(new Rectangle(x, y, CARD_W, CARD_H),
+				clickables.add(new Clickable(toCanvas(x, y, CARD_W, CARD_H, scale, offsetX, offsetY),
 					() -> actions.pickOption(index, expectedName)));
 			}
 
@@ -248,16 +261,18 @@ public class DraftCardOverlay extends Overlay implements DraftCardPresenter
 			boolean canReroll = rerolls > 0;
 			int pillW = Math.min(240, Math.max(180, gridW));
 			int pillH = 34;
-			int pillX = (canvasW - pillW) / 2;
+			int pillX = (surfaceW - pillW) / 2;
 			int pillY = gridTop + gridH + (REROLL_BAND - pillH) / 2;
 			Rectangle pill = new Rectangle(pillX, pillY, pillW, pillH);
 			drawReroll(g, pill, canReroll ? "Reroll (" + rerolls + " left)" : "No rerolls left",
 				canReroll, fonts);
 			if (canReroll)
 			{
-				clickables.add(new Clickable(pill, actions::rerollDraft));
+				clickables.add(new Clickable(toCanvas(pillX, pillY, pillW, pillH, scale, offsetX, offsetY),
+					actions::rerollDraft));
 			}
 
+			Rectangle surface = toCanvas(0, 0, surfaceW, surfaceH, scale, offsetX, offsetY);
 			return new Rendered(clickables, surface);
 		}
 		finally
@@ -394,6 +409,37 @@ public class DraftCardOverlay extends Overlay implements DraftCardPresenter
 		return Math.max(1, Math.min(desired, fit));
 	}
 
+	/**
+	 * Uniform scale that keeps the design-space surface inside the canvas
+	 * margins. 1.0 when it already fits; never below a small floor so cards stay
+	 * legible even on an implausibly tiny client.
+	 */
+	static double fitScale(int surfaceW, int surfaceH, int canvasW, int canvasH)
+	{
+		double availW = canvasW - 2.0 * MARGIN;
+		double availH = canvasH - 2.0 * MARGIN;
+		double scale = 1.0;
+		if (surfaceW > availW)
+		{
+			scale = Math.min(scale, availW / surfaceW);
+		}
+		if (surfaceH > availH)
+		{
+			scale = Math.min(scale, availH / surfaceH);
+		}
+		return Math.max(0.35, scale);
+	}
+
+	/** Map a design-space rectangle through the render transform into canvas pixels. */
+	private static Rectangle toCanvas(int x, int y, int w, int h, double scale, double offsetX, double offsetY)
+	{
+		return new Rectangle(
+			(int) Math.round(x * scale + offsetX),
+			(int) Math.round(y * scale + offsetY),
+			(int) Math.round(w * scale),
+			(int) Math.round(h * scale));
+	}
+
 	private static boolean isActive(PanelSnapshot snap)
 	{
 		return snap != null && snap.getOffers() != null && !snap.getOffers().isEmpty();
@@ -496,18 +542,32 @@ public class DraftCardOverlay extends Overlay implements DraftCardPresenter
 		{
 			return event;
 		}
-		Point point = event.getPoint();
+		// Only a left-click commits a choice; a right/middle-click must never
+		// pick or reroll, but is still swallowed when it lands on the surface so
+		// it can't open a walk-here/context menu on the world beneath the cards.
+		if (event.getButton() == MouseEvent.BUTTON1)
+		{
+			Runnable action = actionForPress(clickables, event.getPoint());
+			if (action != null)
+			{
+				action.run();
+				return consume(event);
+			}
+		}
+		return isInsideSurface(event) ? consume(event) : event;
+	}
+
+	/** The callback for the clickable under {@code point}, or null if none. */
+	static Runnable actionForPress(List<Clickable> clickables, Point point)
+	{
 		for (Clickable clickable : clickables)
 		{
 			if (clickable.bounds.contains(point))
 			{
-				clickable.onClick.run();
-				return consume(event);
+				return clickable.onClick;
 			}
 		}
-		// Consume any press that lands on the card surface so it never reaches
-		// the world as a walk-here click.
-		return isInsideSurface(event) ? consume(event) : event;
+		return null;
 	}
 
 	private void updateHover(Point point)
