@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>v02-core · Pathlocked v0.2 playtest</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --bg: #16181d; --panel: #1e2128; --panel2: #23272f; --border: #2e333d;
+    --text: #d6d9de; --muted: #8b919c; --accent: #c9a35c; --green: #7fa66a;
+    --red: #b06a5f;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.5 -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 36px 28px 80px; }
+  h1 { font-size: 24px; margin: 0 0 6px; }
+  .sub { color: var(--muted); margin-bottom: 8px; }
+  .launch { background: var(--panel2); border: 1px solid var(--border);
+    border-radius: 6px; padding: 10px 14px; margin: 16px 0 28px; font-size: 14px; }
+  code { background: var(--panel2); border: 1px solid var(--border); border-radius: 4px;
+    padding: 1px 5px; font-size: 13px; font-family: "SF Mono", Menlo, monospace; }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px 18px; margin: 14px 0; }
+  .card h3 { margin: 0 0 8px; font-size: 16px; }
+  .card h3 .id { color: var(--accent); margin-right: 8px; }
+  .how, .check { margin: 8px 0; font-size: 14px; }
+  .how b, .check b { color: var(--accent); font-weight: 600; }
+  .check ul { margin: 6px 0 0; padding-left: 20px; }
+  .check li { margin: 3px 0; }
+  .controls { display: flex; gap: 10px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+  .toggle { display: flex; gap: 6px; }
+  .toggle button { background: var(--panel2); color: var(--muted); border: 1px solid var(--border);
+    border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: 13px; }
+  .toggle button.on-pass { background: #2c3a2c; color: var(--green); border-color: var(--green); }
+  .toggle button.on-fail { background: #3a2c2a; color: var(--red); border-color: var(--red); }
+  .comment { flex: 1; min-width: 220px; background: var(--panel2); color: var(--text);
+    border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; font-size: 13px; }
+  .copybar { position: sticky; bottom: 0; background: var(--bg); padding: 14px 0 18px;
+    border-top: 1px solid var(--border); margin-top: 28px; display: flex; gap: 14px; align-items: center; }
+  #copyBtn { background: var(--accent); color: #1c1c1c; font-weight: 600; border: none;
+    border-radius: 6px; padding: 10px 18px; cursor: pointer; font-size: 14px; }
+  #copyStatus { color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Pathlocked v0.2 — playtest handoff</h1>
+<div class="sub">Branch <code>emdash/v02-core</code> · build green, 42/42 tests ·
+/code-review self-pass (10 findings) + 3 Codex ensemble rounds (4 findings) — all fixed, final round clean 3/3.</div>
+
+<div class="launch"><b>Launch:</b> in the <code>emdash/v02-core</code> worktree run
+<code>JAVA_HOME=/Library/Java/JavaVirtualMachines/jbr-17.0.5-osx-aarch64-b653.14/Contents/Home ./gradlew run</code>,
+log into an F2P world with your existing test account (its v0.1 profile migrates in place — nothing is lost),
+and open the Pathlocked side panel. Your run: mark each card ✓/✗, comment on failures, hit
+<b>Copy for Claude</b> at the bottom, paste back to me.</div>
+
+<div class="card" data-id="T1">
+<h3><span class="id">T1</span>Migration + instant skill draft</h3>
+<div class="how"><b>How:</b> just log in with the existing v0.1 test profile.</div>
+<div class="check"><b>Check:</b><ul>
+<li>A draft opens immediately (or after resolving a leftover v0.1 draft) with <b>3 gold SKILL cards</b> (star emblem, "SKILL" header) — this is new; v0.1 would have shown a region/monster draft.</li>
+<li>Reroll swaps the three skills but they stay skills.</li>
+<li>Unlocks tab: Skills 3 / 15, Items 3 / 15 before picking (starters: Attack, Strength, Hitpoints; Bronze tier, Basic food, Tools).</li>
+</ul></div>
+<div class="controls"><div class="toggle"><button class="pass">✓ Verified &amp; complete</button><button class="fail">✗ Not fixed</button></div><input class="comment" placeholder="What's wrong, if anything"></div>
+</div>
+
+<div class="card" data-id="T2">
+<h3><span class="id">T2</span>Skill pick + void XP</h3>
+<div class="how"><b>How:</b> pick one gathering skill (e.g. Fishing). Then train a DIFFERENT still-locked skill — e.g. chop a tree if Woodcutting is locked.</div>
+<div class="check"><b>Check:</b><ul>
+<li>Chat: "Pathlocked: Unlocked: Fishing!" and Skills count ticks up.</li>
+<li>Locked-skill XP: exactly ONE chat warning "<i>Woodcutting is locked - that XP is void and earns no points</i>" (no spam on further drops), points do NOT increase.</li>
+<li>Panel "Void XP (locked skills)" rises within ~30s (it refreshes on the autosave cadence, not per drop).</li>
+<li>Hop worlds and keep training: the warning does NOT repeat (same session).</li>
+</ul></div>
+<div class="controls"><div class="toggle"><button class="pass">✓ Verified &amp; complete</button><button class="fail">✗ Not fixed</button></div><input class="comment" placeholder="What's wrong, if anything"></div>
+</div>
+
+<div class="card" data-id="T3">
+<h3><span class="id">T3</span>Unlocked-skill points still flow</h3>
+<div class="how"><b>How:</b> train the skill you just unlocked (Fishing → shrimps at Lumbridge swamp / Draynor) on unlocked ground.</div>
+<div class="check"><b>Check:</b><ul>
+<li>Points accrue at 1 / 10 XP exactly as in v0.1; progress bar moves; no void warning.</li>
+</ul></div>
+<div class="controls"><div class="toggle"><button class="pass">✓ Verified &amp; complete</button><button class="fail">✗ Not fixed</button></div><input class="comment" placeholder="What's wrong, if anything"></div>
+</div>
+
+<div class="card" data-id="T4">
+<h3><span class="id">T4</span>Item lock — menus</h3>
+<div class="how"><b>How:</b> get a locked-tag item in your inventory: any IRON item (Al Kharid scimitar shop, or the iron dagger from Prince Ali Rescue prep chest — anything iron works; Iron tier is locked until drafted). Right-click it.</div>
+<div class="check"><b>Check:</b><ul>
+<li>"Wield/Wear" is deprioritized (not the left-click default any more).</li>
+<li>Force-clicking Wield does nothing except chat: "<i>Iron scimitar is locked - draft 'Iron tier' to use it.</i>"</li>
+<li>Eat/Drink on a locked consumable behaves the same; Drop/Use/banking still work (locked = holdable, not usable).</li>
+<li>Bronze gear + food still fully usable (starter tags).</li>
+</ul></div>
+<div class="controls"><div class="toggle"><button class="pass">✓ Verified &amp; complete</button><button class="fail">✗ Not fixed</button></div><input class="comment" placeholder="What's wrong, if anything"></div>
+</div>
+
+<div class="card" data-id="T5">
+<h3><span class="id">T5</span>Item lock — greying</h3>
+<div class="how"><b>How:</b> with that iron item in inventory, open inventory and bank.</div>
+<div class="check"><b>Check:</b><ul>
+<li>Locked items are shaded with a small padlock in the corner, in inventory AND bank.</li>
+<li>Bronze/food/tools are NOT shaded. Config → Pathlocked → "Grey locked items" off removes the shading.</li>
+</ul></div>
+<div class="controls"><div class="toggle"><button class="pass">✓ Verified &amp; complete</button><button class="fail">✗ Not fixed</button></div><input class="comment" placeholder="What's wrong, if anything"></div>
+</div>
+
+<div class="card" data-id="T6">
+<h3><span class="id">T6</span>New draft rotation</h3>
+<div class="how"><b>How:</b> earn thresholds through a few more drafts (rotation is region → monster → item; every 5th free pick; every 10th skill keystone).</div>
+<div class="check"><b>Check:</b><ul>
+<li>An ITEM draft appears (blue accent, satchel emblem) offering tags like "Iron tier · 29 items" — and only Iron among the metals (Steel waits for Iron: tier chain).</li>
+<li>The free pick (5th) mixes categories, max 6 cards.</li>
+<li>Card overlay + side panel show the same offers; picking from either works.</li>
+</ul></div>
+<div class="controls"><div class="toggle"><button class="pass">✓ Verified &amp; complete</button><button class="fail">✗ Not fixed</button></div><input class="comment" placeholder="What's wrong, if anything"></div>
+</div>
+
+<div class="card" data-id="T7">
+<h3><span class="id">T7</span>Unlock tree tab</h3>
+<div class="how"><b>How:</b> side panel → "Unlocks" tab.</div>
+<div class="check"><b>Check:</b><ul>
+<li>Four sections with live counts (Regions x/83, Monsters x/47, Items x/15, Skills x/15).</li>
+<li>Green = owned, grey = locked; expanding a section survives point ticks/draft picks (no auto-collapse).</li>
+</ul></div>
+<div class="controls"><div class="toggle"><button class="pass">✓ Verified &amp; complete</button><button class="fail">✗ Not fixed</button></div><input class="comment" placeholder="What's wrong, if anything"></div>
+</div>
+
+<div class="card" data-id="T8">
+<h3><span class="id">T8</span>v0.1 behavior unchanged</h3>
+<div class="how"><b>How:</b> quick regression sweep: walk into a locked region, kill an unlocked monster, kill a locked one.</div>
+<div class="check"><b>Check:</b><ul>
+<li>Locked-region banner + tile shading + violation ticking still work.</li>
+<li>Unlocked monster kill pays combat-level points; locked monster attack deprioritized/blocked with the v0.1 message.</li>
+<li>Profile save/load across relog keeps everything (points, unlocks, void XP).</li>
+</ul></div>
+<div class="controls"><div class="toggle"><button class="pass">✓ Verified &amp; complete</button><button class="fail">✗ Not fixed</button></div><input class="comment" placeholder="What's wrong, if anything"></div>
+</div>
+
+<div class="copybar">
+<button id="copyBtn">Copy for Claude</button>
+<span id="copyStatus"></span>
+</div>
+</div>
+
+<script>
+const KEY = 'pathlocked-v02-handoff';
+const state = JSON.parse(localStorage.getItem(KEY) || '{}');
+
+document.querySelectorAll('.card').forEach(card => {
+  const id = card.dataset.id;
+  const passBtn = card.querySelector('.pass');
+  const failBtn = card.querySelector('.fail');
+  const comment = card.querySelector('.comment');
+  const saved = state[id] || {};
+  if (saved.status === 'pass') passBtn.classList.add('on-pass');
+  if (saved.status === 'fail') failBtn.classList.add('on-fail');
+  comment.value = saved.comment || '';
+
+  function set(status) {
+    const current = state[id] || {};
+    current.status = current.status === status ? null : status;
+    state[id] = current;
+    passBtn.classList.toggle('on-pass', current.status === 'pass');
+    failBtn.classList.toggle('on-fail', current.status === 'fail');
+    persist();
+  }
+  passBtn.onclick = () => set('pass');
+  failBtn.onclick = () => set('fail');
+  comment.oninput = () => { (state[id] = state[id] || {}).comment = comment.value; persist(); };
+});
+
+function persist() { localStorage.setItem(KEY, JSON.stringify(state)); }
+
+document.getElementById('copyBtn').onclick = async () => {
+  const lines = ['Pathlocked v0.2 playtest results (branch emdash/v02-core):'];
+  document.querySelectorAll('.card').forEach(card => {
+    const id = card.dataset.id;
+    const title = card.querySelector('h3').textContent.trim();
+    const saved = state[id] || {};
+    const mark = saved.status === 'pass' ? 'VERIFIED' : saved.status === 'fail' ? 'NOT FIXED' : 'NOT TESTED';
+    let line = `${id} [${mark}] ${title}`;
+    if (saved.comment) line += ` — ${saved.comment}`;
+    lines.push(line);
+  });
+  await navigator.clipboard.writeText(lines.join('\n'));
+  document.getElementById('copyStatus').textContent = 'Copied - paste it back to Claude.';
+};
+</script>
+</body>
+</html>

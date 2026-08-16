@@ -11,9 +11,12 @@ from the latest state. Keep it short — replace stale lines, don't append.**
 
 ## Current Status (updated 2026-08-16)
 
-- **v0.2 core implemented** on branch `emdash/v02-core` (item-tag + skill
-  unlocks, void XP, keystone drafts, unlock-tree tab). Build green, 40/40
-  tests. In review: /code-review self-pass -> Codex ensemble pending.
+- **v0.2 review-complete, awaiting playtest** on branch `emdash/v02-core`
+  (item-tag + skill unlocks, void XP, keystone drafts, unlock-tree tab).
+  Build green, 42/42 tests. /code-review self-pass (10 findings) + 3 Codex
+  ensemble rounds (4 findings) all fixed; final round clean 3/3. Playtest
+  checklist: `docs/v0.2-test-handoff.html` (T1-T8, owner Haakon). PR to main
+  after playtest.
 - v0.1 + Stage-1 lanes (card overlay, region curation, wiki scraper, hub prep,
   README screenshots) all merged to `main` (PRs #1-#5). Hub-submission PR to
   runelite/plugin-hub still deferred until v0.2 ships.
