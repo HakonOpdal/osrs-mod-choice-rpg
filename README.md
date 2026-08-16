@@ -21,15 +21,17 @@ fixed path, you *choose* where to expand next, one card at a time.
 
 ## Screenshots
 
-_Captures pending — see the shot list below. Drop images in `docs/images/` and
-they'll render here._
+_Captures pending — see the shot list below. Drop images in `docs/images/`
+with the names in the commented-out table below, then un-comment it._
 
+<!-- Restore once the four screenshots exist in docs/images/:
 | | |
 |---|---|
 | ![Draft in the side panel](docs/images/draft-cards.png) | ![Locked-region banner + tile shading](docs/images/locked-region.png) |
 | **The draft** — pick 1 of 3, or reroll once. | **Enforcement** — locked regions shade the ground and warn you. |
 | ![Side panel](docs/images/side-panel.png) | ![Unlock message](docs/images/unlock-message.png) |
 | **The panel** — points, next threshold, unlock counts, history. | **Feedback** — every unlock and violation lands in the chat box. |
+-->
 
 ### Shot list (scenes to capture)
 
