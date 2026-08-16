@@ -59,6 +59,11 @@ public class DraftCardOverlayTest
 		return new DraftOption(DraftCategory.MONSTER, name, 0, tier, "Monster · level " + level);
 	}
 
+	private static DraftOption regionWithDetail(String name, int tier, String detail)
+	{
+		return new DraftOption(DraftCategory.REGION, name, 1234, tier, detail);
+	}
+
 	private static PanelSnapshot snapshot(List<DraftOption> offers, int rerollsLeft, int choiceIndex)
 	{
 		return PanelSnapshot.builder()
@@ -229,6 +234,20 @@ public class DraftCardOverlayTest
 	private static MouseEvent press(Component source, Point at, int button)
 	{
 		return new MouseEvent(source, MouseEvent.MOUSE_PRESSED, 0L, 0, at.x, at.y, 1, false, button);
+	}
+
+	@Test
+	public void wrappingDetailRendersWithoutThrowing()
+	{
+		// A region with notes wraps its detail to two lines; the pips must move
+		// up to stay clear of it (regressions here overwrite the tier row).
+		List<DraftOption> offers = Arrays.asList(
+			regionWithDetail("Lava Maze", 5, "Region · tier 5 · King Black Dragon lair"),
+			regionWithDetail("Fossil Island", 4, "Region · tier 4 · Wyverns and Volcanic Mine"),
+			monster("Zulrah", 6, 725));
+		DraftCardOverlay.Rendered rendered = render(765, 503, snapshot(offers, 1, 0),
+			new RecordingActions(), "wrapping-detail.png");
+		assertEquals(4, rendered.clickables.size());
 	}
 
 	@Test

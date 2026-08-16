@@ -320,18 +320,23 @@ public class DraftCardOverlay extends Overlay implements DraftCardPresenter
 			ny += g.getFontMetrics().getHeight();
 		}
 
-		// Tier pips.
-		drawTierPips(g, x + CARD_W / 2, y + CARD_H - 40, option.getTier());
-
-		// Detail line (wrapped, 2 lines).
+		// Detail line (wrapped, up to 2 lines), bottom-anchored. Lay it out
+		// first so the tier pips can be placed just above it — otherwise a
+		// two-line detail (e.g. a region with notes) would ride up over the pips.
 		g.setFont(fonts.small);
 		List<String> detailLines = wrap(g, option.getDetail(), CARD_W - 16, 2);
-		int dy = y + CARD_H - 20;
-		for (int i = detailLines.size() - 1; i >= 0; i--)
+		int lineHeight = g.getFontMetrics().getHeight();
+		int firstDetailBaseline = y + CARD_H - 12 - (detailLines.size() - 1) * lineHeight;
+		int dy = firstDetailBaseline;
+		for (String line : detailLines)
 		{
-			drawCentered(g, detailLines.get(i), x + CARD_W / 2, dy, SUBTLE);
-			dy -= g.getFontMetrics().getHeight();
+			drawCentered(g, line, x + CARD_W / 2, dy, SUBTLE);
+			dy += lineHeight;
 		}
+
+		// Tier pips sit in the gap between the name and the detail block.
+		int pipTop = firstDetailBaseline - g.getFontMetrics().getAscent() - 15;
+		drawTierPips(g, x + CARD_W / 2, pipTop, option.getTier());
 
 		// Border (brighter when hovered).
 		g.setStroke(new BasicStroke(hovered ? 2.4f : 1.4f));
