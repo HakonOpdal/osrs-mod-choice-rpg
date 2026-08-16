@@ -104,7 +104,8 @@ public class ProfileManager
 		}
 		if (state.pendingDraft != null
 			&& (state.pendingDraft.offers == null || state.pendingDraft.offers.isEmpty()
-				|| state.pendingDraft.offers.stream().anyMatch(offer -> offer.getCategory() == null)))
+				|| state.pendingDraft.offers.stream()
+					.anyMatch(offer -> offer == null || offer.getCategory() == null)))
 		{
 			// Empty or malformed offers (null category would NPE the pick
 			// switch): drop the draft; a fresh one rolls on the next tick.

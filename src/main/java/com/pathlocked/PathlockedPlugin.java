@@ -232,7 +232,9 @@ public class PathlockedPlugin extends Plugin implements PathlockedPanel.Actions
 				damagedNpcs.clear();
 				recentKillCredits.clear();
 				itemLockCache.clear();
-				announcedVoidSkills.clear();
+				// announcedVoidSkills survives here on purpose: a world hop
+				// reloads the same account, and the once-per-session warning
+				// should not repeat. It clears on account change and shutdown.
 				lastAnnouncedStatus = RegionStatus.UNLOCKED;
 				refreshPanel();
 				break;
@@ -661,11 +663,14 @@ public class PathlockedPlugin extends Plugin implements PathlockedPanel.Actions
 				log.warn("Ignoring non-numeric seed override: {}", override);
 			}
 		}
+		if (accountHash != profileAccountHash)
+		{
+			announcedVoidSkills.clear();
+		}
 		profile = profileManager.loadOrCreate(accountHash, content, seed);
 		profileAccountHash = accountHash;
 		pendingDraft = profile.pendingDraft != null;
 		itemLockCache.clear();
-		announcedVoidSkills.clear();
 		// Baselines must come from the client, not from the first StatChanged:
 		// when the plugin is enabled mid-session the login burst already passed,
 		// and first-event priming would swallow the next real XP gain per skill.
