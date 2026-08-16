@@ -32,7 +32,7 @@ stacked planes share one id.
 | Owner (surface) | Dungeon | Underground squares `(rx,ry)` |
 |---|---|---|
 | Dwarven Mine `(47,53)` | Dwarven Mine | `(47,152) (47,153)` |
-| Barbarian Village `(48,53)` | Stronghold of Security (4 levels) | `(29,79) (29,80) (29,81) (30,79) (30,80) (30,76) (30,77) (31,76) (31,77)` |
+| Barbarian Village `(48,53)` | Stronghold of Security (all 4 levels) | `(29,79) (29,80) (29,81) (30,76) (30,77) (30,78) (30,79) (30,80) (31,76) (31,77)` |
 | Varrock `(50,53)` | Varrock sewers | `(49,154) (50,153) (50,154) (50,155)` |
 | Edgeville `(48,54)` | Edgeville dungeon | `(48,153) (48,154) (48,155)` |
 | Mudskipper Point `(46,48)` | Asgarnian Ice Dungeon | `(46,149) (47,149)` |
@@ -59,12 +59,15 @@ Notes on non-obvious choices:
   dungeons that sit cleanly under a single correct surface owner and where the
   generic rule already resolves right, e.g. the Wizard's Tower basement.
 
+All four Stronghold floors are now confirmed from wiki spawn tables (Minotaur
+L1 → `(29,81)`; Flesh Crawler L2 → `(29,79)(29,80)(30,79)(30,80)`; Catablepon
+L3 → `(30,78)`; Ankou L4 → `(30,76)(30,77)(31,76)(31,77)`).
+
 Residual uncertainty (mapped the confirmed core; deliberately excluded fringe
 squares to stay inside the "claimed once" invariant): Dwarven Mine's western
-`rx46` fringe (borders the Mining Guild complex), Stronghold level-3 `(29,78)/(30,78)`
-(spawn table had no X extent), and the Corsair Cove Dungeon's western Myths'
-Guild half. Widen these later if in-game testing shows an unowned dungeon square
-reading as `UNCHARTED`.
+`rx46` fringe (borders the Mining Guild complex) and the Corsair Cove Dungeon's
+western Myths' Guild half. Widen these later if in-game testing shows an unowned
+dungeon square reading as `UNCHARTED`.
 
 ### New schema field: `underground`
 

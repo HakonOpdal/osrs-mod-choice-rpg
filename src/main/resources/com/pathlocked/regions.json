@@ -42,7 +42,7 @@
 
     { "rx": 46, "ry": 53, "name": "North Falador Farms", "tier": 2 },
     { "rx": 47, "ry": 53, "name": "Dwarven Mine", "tier": 2, "notes": "Surface mine entrance; underground mine mapped below", "underground": [[47, 152], [47, 153]] },
-    { "rx": 48, "ry": 53, "name": "Barbarian Village", "tier": 2, "notes": "Stronghold of Security entrance", "underground": [[29, 79], [29, 80], [29, 81], [30, 79], [30, 80], [30, 76], [30, 77], [31, 76], [31, 77]] },
+    { "rx": 48, "ry": 53, "name": "Barbarian Village", "tier": 2, "notes": "Stronghold of Security entrance", "underground": [[29, 79], [29, 80], [29, 81], [30, 76], [30, 77], [30, 78], [30, 79], [30, 80], [31, 76], [31, 77]] },
     { "rx": 49, "ry": 53, "name": "Varrock West", "tier": 1 },
     { "rx": 50, "ry": 53, "name": "Varrock", "tier": 1, "notes": "Varrock sewers below (owns the (49,154) seam shared with Edgeville dungeon)", "underground": [[49, 154], [50, 153], [50, 154], [50, 155]] },
     { "rx": 51, "ry": 53, "name": "Varrock East", "tier": 2 },
