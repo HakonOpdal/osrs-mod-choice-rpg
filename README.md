@@ -23,35 +23,12 @@ fixed path, you *choose* where to expand next, one card at a time.
 
 ## Screenshots
 
-_Captures pending — see the shot list below. Drop images in `docs/images/`
-with the names in the commented-out table below, then un-comment it._
-
-<!-- Restore once the four screenshots exist in docs/images/:
 | | |
 |---|---|
-| ![Draft in the side panel](docs/images/draft-cards.png) | ![Locked-region banner + tile shading](docs/images/locked-region.png) |
-| **The draft** — pick 1 of 3, or reroll once. | **Enforcement** — locked regions shade the ground and warn you. |
+| ![Draft in the side panel](docs/images/draft-cards.png) | ![Locked-region warning banner](docs/images/locked-region.png) |
+| **The draft** — pick 1 of 3, or reroll once. | **Enforcement** — locked regions warn you on entry. |
 | ![Side panel](docs/images/side-panel.png) | ![Unlock message](docs/images/unlock-message.png) |
 | **The panel** — points, next threshold, unlock counts, history. | **Feedback** — every unlock and violation lands in the chat box. |
--->
-
-### Shot list (scenes to capture)
-
-1. **Draft cards** — the side panel with a pending draft open: the three
-   offers (or a six-card free-pick draft mixing regions and monsters), the
-   reroll button, and the "You have earned a choice!" state.
-2. **Locked-region banner + shading** — stand just inside a locked region: the
-   status overlay banner ("You entered a locked region: …") plus the tinted
-   ground tiles of the locked square.
-3. **Side panel (idle)** — logged in, no pending draft: total/available points,
-   the next threshold cost, regions/monsters unlocked counters, and the recent
-   choice history list.
-4. **Unlock chat message** — the moment after picking: the golden
-   "Pathlocked: Unlocked: …!" game message in the chat box (and ideally a
-   locked-monster "…is locked" rejection message too).
-
-_A short GIF of one full loop — earn → threshold → draft → unlock — makes the
-best hero image if you can capture one._
 
 ---
 
