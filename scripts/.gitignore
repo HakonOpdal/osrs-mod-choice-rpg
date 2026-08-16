@@ -1,0 +1,6 @@
+# Local HTTP cache — never commit (regenerated on demand, see wikiclient.py).
+.cache/
+
+# Python bytecode cache.
+__pycache__/
+*.pyc
