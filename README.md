@@ -1,1 +1,155 @@
-# osrs-mod-choice-rpg
+# Pathlocked
+
+**A choice-unlock gamemode for Old School RuneScape.** The whole world starts
+locked — every region and every monster. You earn points just by playing, and
+when you've banked enough, the game hands you a **draft**: pick 1 of 3 unlocks.
+Your account, your route. No two runs look the same.
+
+Think Bronzeman's restriction meets a roguelite draft: instead of grinding a
+fixed path, you *choose* where to expand next, one card at a time.
+
+<p align="center">
+  <img src="icon.png" alt="Pathlocked icon" width="48">
+</p>
+
+> **v0.1 is an honor-mode, F2P-scoped gamemode.** It shades locked regions,
+> deprioritizes (and optionally blocks) attacks on locked monsters, and tracks
+> your unlocks — but it does not stop you from walking anywhere or gaining XP
+> the client can't gate. The challenge is yours to keep. See the [FAQ](#faq).
+
+---
+
+## Screenshots
+
+_Captures pending — see the shot list below. Drop images in `docs/images/` and
+they'll render here._
+
+| | |
+|---|---|
+| ![Draft in the side panel](docs/images/draft-cards.png) | ![Locked-region banner + tile shading](docs/images/locked-region.png) |
+| **The draft** — pick 1 of 3, or reroll once. | **Enforcement** — locked regions shade the ground and warn you. |
+| ![Side panel](docs/images/side-panel.png) | ![Unlock message](docs/images/unlock-message.png) |
+| **The panel** — points, next threshold, unlock counts, history. | **Feedback** — every unlock and violation lands in the chat box. |
+
+### Shot list (scenes to capture)
+
+1. **Draft cards** — the side panel with a pending draft open: three offers
+   (a mix of region + monster on a free-pick draft), the reroll button, and the
+   "You have earned a choice!" state.
+2. **Locked-region banner + shading** — stand just inside a locked region: the
+   status overlay banner ("You entered a locked region: …") plus the tinted
+   ground tiles of the locked square.
+3. **Side panel (idle)** — logged in, no pending draft: total/available points,
+   the next threshold cost, regions/monsters unlocked counters, and the recent
+   choice history list.
+4. **Unlock chat message** — the moment after picking: the golden
+   "Pathlocked: Unlocked: …!" game message in the chat box (and ideally a
+   locked-monster "…is locked" rejection message too).
+
+_A short GIF of one full loop — earn → threshold → draft → unlock — makes the
+best hero image if you can capture one._
+
+---
+
+## How it plays
+
+### 1. Earn points
+
+| Source | Rate |
+|---|---|
+| Non-combat XP | **1 point per 10 XP** (any skill except the combat skills) |
+| Killing an **unlocked** listed monster | **points = its combat level** (minimum 1) |
+
+Combat XP is deliberately excluded so kills don't double-count. Points only
+accrue on **unlocked ground** — skilling or killing while trespassing in a
+locked region earns nothing.
+
+### 2. Hit a threshold
+
+Thresholds escalate, so each unlock costs more than the last (base 250,
+growth ^1.35, rounded to 25):
+
+| Choice # | Points to unlock |
+|---:|---:|
+| 1 | 250 |
+| 2 | 625 |
+| 3 | 1,100 |
+| 4 | 1,625 |
+| 5 | 2,200 |
+| 6 | 2,800 |
+| … | … |
+
+The first threshold is banked for new profiles, so you draft immediately on your
+first login. When you can afford the next one, a draft opens automatically.
+
+### 3. Draft your unlock
+
+Each draft offers **1 of 3**, drawn from your **frontier**:
+
+- **Region drafts** offer locked regions **adjacent to** one you already own.
+- **Monster drafts** offer locked monsters whose **home region is unlocked**.
+- Every **5th** draft is a **free pick** — both categories on the table at once.
+
+You get **one reroll** per draft. Offers are **seeded and deterministic** from
+your account (or a shared seed), so a reroll is stable across relogs and two
+players on the same seed see the same cards — great for races. The frontier rule
+guarantees you can never soft-lock: there is always something reachable to pick.
+
+---
+
+## Configuration
+
+Settings live under **Pathlocked** in the RuneLite config panel.
+
+| Setting | Default | What it does |
+|---|---|---|
+| **Enforce monster locks** | on | Deprioritizes the *Attack* option on locked monsters so you don't click them by accident. |
+| **Hard-block attacks** | on | Goes further: consumes *Attack* clicks on locked monsters entirely (requires the option above). |
+| **Shade locked regions** | on | Tints the ground tiles of nearby locked map squares. |
+| **Show status overlay** | on | Shows the locked-region warning and the "choice ready" banner. |
+| **Seed override** | _(empty)_ | A numeric seed applied only when a **new** profile is created, for shared/seeded runs. Empty = derive the seed from your account. |
+
+---
+
+## FAQ
+
+**Is this an honor-mode challenge?**
+Yes, in v0.1. The plugin makes the restrictions *visible and enforceable at the
+UI level* — shading, attack-blocking, point gating, and violation tracking — but
+it can't physically stop your character from walking into a locked region or
+prevent XP the client doesn't surface. It counts violations (trespass ticks,
+illegal kills) so you can hold yourself accountable. Treat it like Bronzeman:
+the rules only work if you keep them.
+
+**What content is covered?**
+v0.1 is scoped to **free-to-play**: 83 regions and 47 monsters, matched by NPC
+name (not id). Members areas and unlisted NPCs read as *uncharted* and simply
+earn no points rather than being falsely "locked." Dungeons and caves inherit
+their surface square's lock status.
+
+**Where is my progress stored?**
+Per account, at `~/.runelite/pathlocked/profile-<accountHash>.json` (under your
+RuneLite home directory). Each account gets its own profile; nothing is shared
+across accounts. Deleting the file resets that account's run.
+
+**Does it work with Bronzeman / Tileman / the OSRS TCG modes?**
+It runs alongside them — Pathlocked only reads game events and adjusts menus and
+overlays. It layers cleanly on top of restriction modes. The point economy is
+modeled on the OSRS TCG (non-combat XP + combat-level kill bounties), so it
+feels at home next to those gamemodes.
+
+**Can I share a run with a friend?**
+Yes — set the same **Seed override** before either of you creates a profile.
+Identical seeds produce identical draft offers at every threshold.
+
+---
+
+## Feedback & issues
+
+Please report bugs and suggestions via the repository's issue tracker. Pathlocked
+is provided "as is" as a plugin-hub plugin and is not supported by the RuneLite
+developers.
+
+## License
+
+[BSD 2-Clause](LICENSE) © 2026 Hakon Andreas Opdal.
