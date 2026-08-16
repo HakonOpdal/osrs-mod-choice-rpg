@@ -279,6 +279,10 @@ public class PathlockedPlugin extends Plugin implements PathlockedPanel.Actions
 		if (dirty && ++ticksSinceSave >= SAVE_INTERVAL_TICKS)
 		{
 			saveProfile();
+			// Catch-up for display-only counters (void XP) whose hot paths
+			// deliberately skip per-event refreshes; the unlock tree skips
+			// identical rebuilds, so this cadence is cheap.
+			refreshPanel();
 		}
 	}
 
