@@ -55,6 +55,8 @@ public class ContentRepository
 	private final Map<String, RegionDef> regionsByName = new LinkedHashMap<>();
 	private final Map<String, MonsterDef> monstersByKey = new LinkedHashMap<>();
 	private final Map<Integer, Set<Integer>> adjacency = new HashMap<>();
+	/** underground map-square id -> owning surface region id (explicit mappings only). */
+	private final Map<Integer, Integer> undergroundOwner = new HashMap<>();
 
 	/**
 	 * @param gson the client's injected Gson (Plugin Hub forbids instantiating Gson directly)
@@ -87,6 +89,28 @@ public class ContentRepository
 			monstersByKey.put(monster.key(), monster);
 		}
 		buildAdjacency();
+		buildUndergroundOwners();
+	}
+
+	private void buildUndergroundOwners()
+	{
+		for (RegionDef region : regions)
+		{
+			if (region.getUnderground() == null)
+			{
+				continue;
+			}
+			for (List<Integer> square : region.getUnderground())
+			{
+				if (square == null || square.size() != 2)
+				{
+					continue;
+				}
+				int squareId = (square.get(0) << 8) | square.get(1);
+				// First writer wins; validate() reports any conflicting duplicates.
+				undergroundOwner.putIfAbsent(squareId, region.id());
+			}
+		}
 	}
 
 	private static <T> T readResource(Gson gson, String resourceName, Class<T> type)
@@ -149,6 +173,20 @@ public class ContentRepository
 		return regionsById.containsKey(id);
 	}
 
+	/**
+	 * The surface region id that owns the unlock for an explicitly-mapped
+	 * underground map square, or {@code null} if the square has no explicit
+	 * mapping. Callers should fall back to the generic {@code ry−100} rule when
+	 * this returns null. See {@code docs/integration-notes/lane-B.md}.
+	 *
+	 * @param regionId an underground map-square region id
+	 * @return owning surface region id, or null when unmapped
+	 */
+	public Integer surfaceOwnerOf(int regionId)
+	{
+		return undergroundOwner.get(regionId);
+	}
+
 	public Set<Integer> neighboursOf(int regionId)
 	{
 		return adjacency.getOrDefault(regionId, Set.of());
@@ -186,6 +224,37 @@ public class ContentRepository
 			if (region.getTier() < 1 || region.getTier() > 5)
 			{
 				problems.add("Region tier out of range 1-5: " + region.getName());
+			}
+		}
+
+		// Underground mappings: every square well-formed, owned once, and never
+		// colliding with a surface square (a square is surface XOR underground).
+		Map<Integer, String> undergroundClaimedBy = new HashMap<>();
+		for (RegionDef region : regions)
+		{
+			if (region.getUnderground() == null)
+			{
+				continue;
+			}
+			for (List<Integer> square : region.getUnderground())
+			{
+				if (square == null || square.size() != 2)
+				{
+					problems.add("Underground square must be an [rx, ry] pair in region: " + region.getName());
+					continue;
+				}
+				int squareId = (square.get(0) << 8) | square.get(1);
+				if (regionsById.containsKey(squareId))
+				{
+					problems.add("Underground square " + square + " in " + region.getName()
+						+ " collides with surface region: " + regionsById.get(squareId).getName());
+				}
+				String previousOwner = undergroundClaimedBy.putIfAbsent(squareId, region.getName());
+				if (previousOwner != null)
+				{
+					problems.add("Underground square " + square + " mapped twice: "
+						+ previousOwner + " and " + region.getName());
+				}
 			}
 		}
 

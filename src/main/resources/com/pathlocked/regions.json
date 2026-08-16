@@ -1,7 +1,7 @@
 {
   "comment": "F2P surface map squares (64x64 tiles). id = (rx << 8) | ry, computed at load. Grid adjacency is derived from rx/ry; 'links' adds non-grid connections (boats, tunnels). Coordinates and names are best-effort and flagged for playtest verification.",
   "regions": [
-    { "rx": 46, "ry": 48, "name": "Mudskipper Point", "tier": 2, "notes": "Ice dungeon entrance" },
+    { "rx": 46, "ry": 48, "name": "Mudskipper Point", "tier": 2, "notes": "Asgarnian Ice Dungeon entrance", "underground": [[46, 149], [47, 149]] },
     { "rx": 46, "ry": 49, "name": "Thurgo's Peninsula", "tier": 2 },
     { "rx": 47, "ry": 49, "name": "Port Sarim South", "tier": 2 },
     { "rx": 48, "ry": 49, "name": "Wizards' Tower", "tier": 1 },
@@ -9,11 +9,11 @@
     { "rx": 50, "ry": 49, "name": "Lumbridge Swamp", "tier": 1 },
     { "rx": 51, "ry": 49, "name": "Al Kharid", "tier": 1 },
 
-    { "rx": 44, "ry": 49, "name": "Karamja Volcano", "tier": 3 },
+    { "rx": 44, "ry": 49, "name": "Karamja Volcano", "tier": 3, "notes": "Karamja Dungeon below (SE, under the volcano)", "underground": [[44, 149], [45, 149]] },
     { "rx": 45, "ry": 49, "name": "Musa Point", "tier": 2 },
-    { "rx": 44, "ry": 50, "name": "Crandor", "tier": 4, "notes": "Dragon Slayer island" },
+    { "rx": 44, "ry": 50, "name": "Crandor", "tier": 4, "notes": "Dragon Slayer island; NW tunnel + Elvarg lab below", "underground": [[44, 150], [45, 150], [44, 151]] },
     { "rx": 44, "ry": 52, "name": "Entrana", "tier": 2, "notes": "No weapons or armour" },
-    { "rx": 40, "ry": 44, "name": "Corsair Cove", "tier": 2 },
+    { "rx": 40, "ry": 44, "name": "Corsair Cove", "tier": 2, "notes": "Corsair Cove Dungeon (ogresses) below", "underground": [[30, 140], [31, 140]] },
 
     { "rx": 45, "ry": 50, "name": "Melzar's Maze", "tier": 3 },
     { "rx": 46, "ry": 50, "name": "Rimmington", "tier": 2 },
@@ -41,15 +41,15 @@
     { "rx": 51, "ry": 52, "name": "South-east Varrock Mine", "tier": 2 },
 
     { "rx": 46, "ry": 53, "name": "North Falador Farms", "tier": 2 },
-    { "rx": 47, "ry": 53, "name": "Dwarven Mine", "tier": 2 },
-    { "rx": 48, "ry": 53, "name": "Barbarian Village", "tier": 2 },
+    { "rx": 47, "ry": 53, "name": "Dwarven Mine", "tier": 2, "notes": "Surface mine entrance; underground mine mapped below", "underground": [[47, 152], [47, 153]] },
+    { "rx": 48, "ry": 53, "name": "Barbarian Village", "tier": 2, "notes": "Stronghold of Security entrance", "underground": [[29, 79], [29, 80], [29, 81], [30, 79], [30, 80], [30, 76], [30, 77], [31, 76], [31, 77]] },
     { "rx": 49, "ry": 53, "name": "Varrock West", "tier": 1 },
-    { "rx": 50, "ry": 53, "name": "Varrock", "tier": 1 },
+    { "rx": 50, "ry": 53, "name": "Varrock", "tier": 1, "notes": "Varrock sewers below (owns the (49,154) seam shared with Edgeville dungeon)", "underground": [[49, 154], [50, 153], [50, 154], [50, 155]] },
     { "rx": 51, "ry": 53, "name": "Varrock East", "tier": 2 },
 
     { "rx": 46, "ry": 54, "name": "Goblin Village", "tier": 2 },
     { "rx": 47, "ry": 54, "name": "Ice Mountain & Monastery", "tier": 2 },
-    { "rx": 48, "ry": 54, "name": "Edgeville", "tier": 2 },
+    { "rx": 48, "ry": 54, "name": "Edgeville", "tier": 2, "notes": "Edgeville dungeon below (48-column core; (49,154) seam assigned to Varrock)", "underground": [[48, 153], [48, 154], [48, 155]] },
     { "rx": 49, "ry": 54, "name": "Grand Exchange", "tier": 1 },
     { "rx": 50, "ry": 54, "name": "Varrock Palace", "tier": 1 },
     { "rx": 51, "ry": 54, "name": "Lumber Yard", "tier": 2 },
@@ -90,7 +90,7 @@
     { "rx": 51, "ry": 59, "name": "Wilderness 33-40 Far East", "tier": 5 },
 
     { "rx": 46, "ry": 60, "name": "Wilderness 41-48 West", "tier": 5 },
-    { "rx": 47, "ry": 60, "name": "Wilderness 41-48 Mid-West", "tier": 5, "notes": "Lava Maze, KBD lair entrance" },
+    { "rx": 47, "ry": 60, "name": "Wilderness 41-48 Mid-West", "tier": 5, "notes": "Lava Maze, KBD lair entrance", "underground": [[48, 160]] },
     { "rx": 48, "ry": 60, "name": "Wilderness 41-48 Edgeville", "tier": 5 },
     { "rx": 49, "ry": 60, "name": "Wilderness 41-48 Center", "tier": 5 },
     { "rx": 50, "ry": 60, "name": "Wilderness 41-48 East", "tier": 5, "notes": "Demonic Ruins" },
