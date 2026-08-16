@@ -103,9 +103,21 @@ public class ProfileManager
 			state.history = new ArrayList<>();
 		}
 		if (state.pendingDraft != null
-			&& (state.pendingDraft.offers == null || state.pendingDraft.offers.isEmpty()))
+			&& (state.pendingDraft.offers == null || state.pendingDraft.offers.isEmpty()
+				|| state.pendingDraft.offers.stream().anyMatch(offer -> offer.getCategory() == null)))
 		{
+			// Empty or malformed offers (null category would NPE the pick
+			// switch): drop the draft; a fresh one rolls on the next tick.
 			state.pendingDraft = null;
+		}
+		if (state.pendingDraft != null && state.pendingDraft.category == null)
+		{
+			// Pre-category profile: infer so a reroll keeps the same kind of
+			// draft. Mixed offers can only have come from a free pick.
+			DraftCategory first = state.pendingDraft.offers.get(0).getCategory();
+			boolean uniform = state.pendingDraft.offers.stream()
+				.allMatch(offer -> offer.getCategory() == first);
+			state.pendingDraft.category = uniform ? first : DraftCategory.FREE;
 		}
 		return state;
 	}
@@ -125,7 +137,11 @@ public class ProfileManager
 			return false;
 		}
 		grantStarterSkillsAndTags(state, content);
-		state.totalPoints += ThresholdCurve.cost(state.choiceIndex);
+		// Bank the threshold the forced skill draft will spend. With a pending
+		// v0.1 draft still open, that draft consumes cost(choiceIndex) first,
+		// so the skill draft's own cost is the NEXT threshold.
+		int skillDraftIndex = state.pendingDraft != null ? state.choiceIndex + 1 : state.choiceIndex;
+		state.totalPoints += ThresholdCurve.cost(skillDraftIndex);
 		state.nextCategoryOverride = DraftCategory.SKILL;
 		return true;
 	}

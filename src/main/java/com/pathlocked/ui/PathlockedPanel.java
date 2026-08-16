@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -52,6 +53,7 @@ public class PathlockedPanel extends PluginPanel
 	private final JTextArea historyArea = new JTextArea();
 	private final JTree unlockTree = new JTree();
 	private final DefaultMutableTreeNode unlockRoot = new DefaultMutableTreeNode("Unlocks");
+	private List<UnlockEntry> lastTreeEntries;
 
 	public PathlockedPanel(Actions actions)
 	{
@@ -218,16 +220,7 @@ public class PathlockedPanel extends PluginPanel
 			draftSection.add(rerollButton);
 		}
 
-		unlocksLabel.setText(String.format("<html>Regions: %d / %d unlocked<br>Monsters: %d / %d unlocked<br>"
-				+ "Items: %d / %d tags · Skills: %d / %d<br>"
-				+ "Void XP (locked skills): %,d<br>"
-				+ "Illegal kills: %d · Ticks in locked regions: %d</html>",
-			snapshot.getRegionsUnlocked(), snapshot.getRegionsTotal(),
-			snapshot.getMonstersUnlocked(), snapshot.getMonstersTotal(),
-			snapshot.getTagsUnlocked(), snapshot.getTagsTotal(),
-			snapshot.getSkillsUnlocked(), snapshot.getSkillsTotal(),
-			snapshot.getVoidXp(),
-			snapshot.getIllegalKills(), snapshot.getViolationTicks()));
+		unlocksLabel.setText(buildUnlocksSummary(snapshot));
 
 		historyArea.setText(snapshot.getRecentHistory() == null ? ""
 			: String.join("\n", snapshot.getRecentHistory()));
@@ -235,6 +228,37 @@ public class PathlockedPanel extends PluginPanel
 		rebuildUnlockTree(snapshot.getUnlockEntries());
 
 		revalidateAll();
+	}
+
+	/**
+	 * Per-section "owned / total" lines derived from the same entry list the
+	 * unlock tree renders, so the two can never disagree.
+	 */
+	private static String buildUnlocksSummary(PanelSnapshot snapshot)
+	{
+		StringBuilder summary = new StringBuilder("<html>");
+		if (snapshot.getUnlockEntries() != null)
+		{
+			Map<String, int[]> counts = new LinkedHashMap<>();
+			for (UnlockEntry entry : snapshot.getUnlockEntries())
+			{
+				int[] ownedAndTotal = counts.computeIfAbsent(entry.getSection(), section -> new int[2]);
+				ownedAndTotal[1]++;
+				if (entry.isUnlocked())
+				{
+					ownedAndTotal[0]++;
+				}
+			}
+			for (Map.Entry<String, int[]> section : counts.entrySet())
+			{
+				summary.append(String.format("%s: %d / %d unlocked<br>",
+					section.getKey(), section.getValue()[0], section.getValue()[1]));
+			}
+		}
+		summary.append(String.format("Void XP (locked skills): %,d<br>", snapshot.getVoidXp()));
+		summary.append(String.format("Illegal kills: %d · Ticks in locked regions: %d</html>",
+			snapshot.getIllegalKills(), snapshot.getViolationTicks()));
+		return summary.toString();
 	}
 
 	/**
@@ -255,6 +279,13 @@ public class PathlockedPanel extends PluginPanel
 
 	private void rebuildUnlockTree(List<UnlockEntry> entries)
 	{
+		// Skip identical rebuilds: XP-driven refreshes are frequent and the
+		// tear-down/reload is the panel's most expensive operation.
+		if (Objects.equals(entries, lastTreeEntries))
+		{
+			return;
+		}
+		lastTreeEntries = entries;
 		// Remember which sections are open so a refresh doesn't collapse the tree
 		// under the player's cursor.
 		Set<String> expandedSections = new HashSet<>();

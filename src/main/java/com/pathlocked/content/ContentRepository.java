@@ -79,6 +79,7 @@ public class ContentRepository
 	private final Map<String, ItemTagDef> tagsByKey = new LinkedHashMap<>();
 	/** lowercase item name -> every tag that lists it (an item may sit in several tags). */
 	private final Map<String, List<ItemTagDef>> tagsByItemName = new HashMap<>();
+	private final Set<String> listedSkills = new HashSet<>();
 	private final Map<Integer, Set<Integer>> adjacency = new HashMap<>();
 	/** underground map-square id -> owning surface region id (explicit mappings only). */
 	private final Map<Integer, Integer> undergroundOwner = new HashMap<>();
@@ -124,6 +125,11 @@ public class ContentRepository
 		}
 		for (ItemTagDef tag : this.itemTags)
 		{
+			if (tag.getName() == null)
+			{
+				// Indexing must survive malformed data; validate() reports it.
+				continue;
+			}
 			tagsByKey.put(tag.key(), tag);
 			if (tag.getItemNames() == null)
 			{
@@ -131,8 +137,12 @@ public class ContentRepository
 			}
 			for (String itemName : tag.getItemNames())
 			{
-				tagsByItemName.computeIfAbsent(itemName.toLowerCase(), k -> new ArrayList<>()).add(tag);
+				tagsByItemName.computeIfAbsent(itemName.toLowerCase(), key -> new ArrayList<>()).add(tag);
 			}
+		}
+		for (String skillName : this.skillNames)
+		{
+			listedSkills.add(skillName.toLowerCase());
 		}
 		buildAdjacency();
 		buildUndergroundOwners();
@@ -266,9 +276,13 @@ public class ContentRepository
 		return monsterByName(npcName) != null;
 	}
 
-	public ItemTagDef tagByName(String tagName)
+	/**
+	 * False for skills outside the draft pool (members skills in the F2P
+	 * scope): those are uncharted — never enforced, like unlisted NPCs/items.
+	 */
+	public boolean isListedSkill(String skillName)
 	{
-		return tagName == null ? null : tagsByKey.get(tagName.toLowerCase());
+		return skillName != null && listedSkills.contains(skillName.toLowerCase());
 	}
 
 	/**
@@ -387,11 +401,41 @@ public class ContentRepository
 
 		Set<String> tagNames = new HashSet<>();
 		Set<Integer> tagTiers = new HashSet<>();
+		Set<String> tieredItems = new HashSet<>();
 		for (ItemTagDef tag : itemTags)
 		{
+			if (tag.getTier() != null && tag.getItemNames() != null)
+			{
+				for (String itemName : tag.getItemNames())
+				{
+					tieredItems.add(itemName.toLowerCase());
+				}
+			}
+		}
+		for (ItemTagDef tag : itemTags)
+		{
+			if (tag.getName() == null)
+			{
+				problems.add("Item tag with no name (category: " + tag.getCategory() + ")");
+				continue;
+			}
 			if (!tagNames.add(tag.key()))
 			{
 				problems.add("Duplicate item tag name: " + tag.getName());
+			}
+			// An untiered tag must never list an item that a tiered tag owns:
+			// "any containing tag unlocked = usable" would let the broad tag
+			// bypass the metal-tier draft chain.
+			if (tag.getTier() == null && tag.getItemNames() != null)
+			{
+				for (String itemName : tag.getItemNames())
+				{
+					if (tieredItems.contains(itemName.toLowerCase()))
+					{
+						problems.add("Item in both a tiered and untiered tag (tier-chain bypass): "
+							+ itemName + " in " + tag.getName());
+					}
+				}
 			}
 			if (tag.getCategory() == null || !TAG_CATEGORIES.contains(tag.getCategory()))
 			{

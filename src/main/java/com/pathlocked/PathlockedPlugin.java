@@ -293,18 +293,22 @@ public class PathlockedPlugin extends Plugin implements PathlockedPanel.Actions
 			return;
 		}
 		Skill skill = event.getSkill();
-		if (!profile.isSkillUnlocked(skill.getName()))
+		if (content.isListedSkill(skill.getName()) && !profile.isSkillUnlocked(skill.getName()))
 		{
 			// Void XP: gained in a locked skill, earns nothing, tracked so the
 			// honor-mode violation stays visible. Also covers locked combat
-			// skills (e.g. training Defence before drafting it).
+			// skills (e.g. training Defence before drafting it). Skills outside
+			// the draft pool (members skills) are uncharted: never enforced,
+			// like unlisted NPCs/items — they fall through to the normal path.
+			// No refreshPanel here: locked-skill training fires StatChanged
+			// every few seconds and the counter is display-only; it catches up
+			// on the next natural refresh.
 			profile.voidXpBySkill.merge(skill.getName().toLowerCase(), (long) xpDelta, Long::sum);
 			dirty = true;
 			if (announcedVoidSkills.add(skill))
 			{
 				announce(skill.getName() + " is locked - that XP is void and earns no points.");
 			}
-			refreshPanel();
 			return;
 		}
 		if (PointsService.isCombatSkill(skill))
@@ -779,14 +783,6 @@ public class PathlockedPlugin extends Plugin implements PathlockedPanel.Actions
 			.offers(profile.pendingDraft == null ? null : new ArrayList<>(profile.pendingDraft.offers))
 			.rerollsLeft(profile.pendingDraft == null ? 0
 				: DraftService.MAX_REROLLS - profile.pendingDraft.rerollsUsed)
-			.regionsUnlocked(profile.unlockedRegions.size())
-			.regionsTotal(content.getRegions().size())
-			.monstersUnlocked(profile.unlockedMonsters.size())
-			.monstersTotal(content.getMonsters().size())
-			.tagsUnlocked(profile.unlockedTags.size())
-			.tagsTotal(content.getItemTags().size())
-			.skillsUnlocked(profile.unlockedSkills.size())
-			.skillsTotal(content.getSkillNames().size())
 			.voidXp(profile.voidXpTotal())
 			.unlockEntries(buildUnlockEntries())
 			.recentHistory(recentHistory)

@@ -18,6 +18,12 @@ public class ProfileState
 	public static class PendingDraft
 	{
 		public int choiceIndex;
+		/**
+		 * Frozen at roll time so a reroll swaps cards within the same kind of
+		 * draft even if the rotation/override state has since changed. Null on
+		 * profiles saved before this field existed; normalize() backfills it.
+		 */
+		public DraftCategory category;
 		public List<DraftOption> offers = new ArrayList<>();
 		public int rerollsUsed;
 		/**

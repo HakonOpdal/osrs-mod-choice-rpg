@@ -81,6 +81,31 @@ public class ProfileManagerTest
 	}
 
 	@Test
+	public void migrationWithPendingDraftBanksTheNextThreshold() throws Exception
+	{
+		ContentRepository content = ContentRepository.load(new Gson());
+		File directory = temporaryFolder.getRoot();
+		ProfileManager manager = new ProfileManager(directory, new Gson());
+
+		// v0.1 profile mid-draft: the open draft will spend cost(2) on pick, so
+		// the promised instant skill draft costs cost(3) — bank that, not cost(2).
+		String v01Json = "{\"seed\":7,\"totalPoints\":1200,\"spentPoints\":875,\"choiceIndex\":2,"
+			+ "\"unlockedRegions\":[12850],\"unlockedMonsters\":[\"chicken\"],\"history\":[],"
+			+ "\"pendingDraft\":{\"choiceIndex\":2,\"rerollsUsed\":0,\"offers\":["
+			+ "{\"category\":\"REGION\",\"name\":\"Al Kharid\",\"regionId\":13105,\"tier\":1,\"detail\":\"d\"}]}}";
+		Files.write(new File(directory, "profile-88.json").toPath(),
+			v01Json.getBytes(StandardCharsets.UTF_8));
+
+		ProfileState migrated = manager.loadOrCreate(88L, content, 1L);
+		assertEquals(1200 + ThresholdCurve.cost(3), migrated.totalPoints);
+		assertEquals("Legacy pending draft gets its category backfilled",
+			DraftCategory.REGION, migrated.pendingDraft.category);
+		assertEquals(DraftCategory.SKILL, migrated.nextCategoryOverride);
+		assertFalse("The pre-override pending draft must not clear the override on pick",
+			migrated.pendingDraft.consumedOverride);
+	}
+
+	@Test
 	public void corruptProfileIsBackedUpAndRecreated() throws Exception
 	{
 		ContentRepository content = ContentRepository.load(new Gson());

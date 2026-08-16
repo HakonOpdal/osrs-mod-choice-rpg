@@ -35,16 +35,34 @@ public class ContentDataTest
 	}
 
 	@Test
-	public void itemLookupIsCaseInsensitiveAndSharedItemsListEveryTag()
+	public void itemLookupIsCaseInsensitive()
 	{
 		ContentRepository content = ContentRepository.load(new Gson());
 		assertTrue("Bronze dagger should be tagged",
 			!content.tagsForItem("BRONZE DAGGER").isEmpty());
 		assertTrue("Unlisted items are uncharted",
 			content.tagsForItem("Twisted bow").isEmpty());
-		// Bronze pickaxe sits in both a metal tier and Tools; the lookup must
-		// return every containing tag or lock checks would be too strict.
-		assertTrue(content.tagsForItem("Bronze pickaxe").size() >= 2);
+		// Metal tools gate through their tier tag ONLY — validate() rejects
+		// tiered items that also sit in an untiered tag (tier-chain bypass).
+		assertEquals(1, content.tagsForItem("Rune pickaxe").size());
+		assertEquals(Integer.valueOf(7),
+			content.tagsForItem("Rune pickaxe").get(0).getTier());
+	}
+
+	@Test
+	public void skillPoolMatchesRuneliteSkillNames()
+	{
+		ContentRepository content = ContentRepository.load(new Gson());
+		java.util.Set<String> runeliteNames = new java.util.HashSet<>();
+		for (net.runelite.api.Skill skill : net.runelite.api.Skill.values())
+		{
+			runeliteNames.add(skill.getName());
+		}
+		for (String name : content.getSkillNames())
+		{
+			assertTrue("skills.json name must match a RuneLite Skill.getName(): " + name,
+				runeliteNames.contains(name));
+		}
 	}
 
 	@Test

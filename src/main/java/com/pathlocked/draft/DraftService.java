@@ -48,13 +48,15 @@ public class DraftService
 		{
 			return false;
 		}
-		List<DraftOption> offers = rollOffers(state, 0);
+		DraftCategory category = categoryFor(state);
+		List<DraftOption> offers = rollOffers(state, category, 0);
 		if (offers.isEmpty())
 		{
 			return false;
 		}
 		ProfileState.PendingDraft draft = new ProfileState.PendingDraft();
 		draft.choiceIndex = state.choiceIndex;
+		draft.category = category;
 		draft.offers = offers;
 		draft.rerollsUsed = 0;
 		draft.consumedOverride = state.nextCategoryOverride != null;
@@ -70,7 +72,11 @@ public class DraftService
 			return false;
 		}
 		draft.rerollsUsed++;
-		draft.offers = rollOffers(state, draft.rerollsUsed);
+		// The category was frozen when the draft was rolled: a reroll swaps the
+		// cards, never the kind of draft — even if an override appeared since
+		// (migration) or the rotation would now say otherwise.
+		DraftCategory category = draft.category != null ? draft.category : categoryFor(state);
+		draft.offers = rollOffers(state, category, draft.rerollsUsed);
 		return true;
 	}
 
@@ -86,6 +92,12 @@ public class DraftService
 			return null;
 		}
 		DraftOption picked = draft.offers.get(optionIndex);
+		if (picked.getCategory() == null)
+		{
+			// Malformed persisted offer; normalize() drops such drafts at load,
+			// this is the in-session backstop against an NPE on the switch.
+			return null;
+		}
 		switch (picked.getCategory())
 		{
 			case REGION:
@@ -162,9 +174,8 @@ public class DraftService
 		}
 	}
 
-	List<DraftOption> rollOffers(ProfileState state, int rerollCount)
+	List<DraftOption> rollOffers(ProfileState state, DraftCategory category, int rerollCount)
 	{
-		DraftCategory category = categoryFor(state);
 		Random rng = new Random(state.seed * 1_000_003L + state.choiceIndex * 101L + rerollCount);
 		int band = tierBand(state);
 
