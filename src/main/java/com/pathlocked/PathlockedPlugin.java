@@ -671,6 +671,13 @@ public class PathlockedPlugin extends Plugin implements PathlockedPanel.Actions
 		profileAccountHash = accountHash;
 		pendingDraft = profile.pendingDraft != null;
 		itemLockCache.clear();
+		if (profileManager.isMigratedProfile())
+		{
+			// Keep the migrated state in the autosave/logout retry loop: if the
+			// manager's own save failed, an unretried logout would re-run the
+			// migration (and re-bank a threshold) on the next login.
+			dirty = true;
+		}
 		// Baselines must come from the client, not from the first StatChanged:
 		// when the plugin is enabled mid-session the login burst already passed,
 		// and first-event priming would swallow the next real XP gain per skill.

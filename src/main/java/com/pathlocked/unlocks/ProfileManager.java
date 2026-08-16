@@ -33,6 +33,15 @@ public class ProfileManager
 	private boolean createdNewProfile;
 
 	/**
+	 * True when the last loadOrCreate upgraded a v0.1 profile. The caller must
+	 * treat the profile as dirty: if the migration save here failed, only the
+	 * caller's retry loop stands between a logout and the migration re-running
+	 * (and re-banking a threshold) on the next login.
+	 */
+	@Getter
+	private boolean migratedProfile;
+
+	/**
 	 * @param gson the client's injected Gson; a pretty-printing variant is derived
 	 * from it rather than instantiating Gson directly (Plugin Hub rule)
 	 */
@@ -45,6 +54,7 @@ public class ProfileManager
 	public ProfileState loadOrCreate(long accountHash, ContentRepository content, long seed)
 	{
 		createdNewProfile = false;
+		migratedProfile = false;
 		File file = profileFile(accountHash);
 		if (file.exists())
 		{
@@ -57,6 +67,7 @@ public class ProfileManager
 					ProfileState normalized = normalize(state);
 					if (migrateToV2(normalized, content))
 					{
+						migratedProfile = true;
 						save(accountHash, normalized);
 					}
 					return normalized;
