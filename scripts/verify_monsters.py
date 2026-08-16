@@ -74,7 +74,7 @@ def build_report(client: WikiClient) -> str:
     members_only_monsters = {title.lower() for title in client.category_members("Members' monsters")}
 
     rows = []
-    counts = {"not_found": 0, "combat_mismatch": 0, "not_f2p": 0, "ok": 0}
+    counts = {"not_found": 0, "combat_mismatch": 0, "not_f2p": 0, "f2p_unconfirmed": 0, "ok": 0}
 
     for monster in monsters:
         name = monster["name"]
@@ -97,6 +97,7 @@ def build_report(client: WikiClient) -> str:
             counts["not_f2p"] += 1
         elif not is_free_to_play and not is_members_only:
             flags.append("ℹ️ F2P status unconfirmed (not in either category)")
+            counts["f2p_unconfirmed"] += 1
 
         if not flags:
             counts["ok"] += 1
@@ -133,6 +134,7 @@ def render_markdown(rows, counts, total, client) -> str:
     lines.append(f"- ⚠️ Name not found: **{counts['not_found']}**")
     lines.append(f"- ⚠️ Combat-level mismatch: **{counts['combat_mismatch']}**")
     lines.append(f"- ⚠️ Members-only (should be F2P): **{counts['not_f2p']}**")
+    lines.append(f"- ℹ️ F2P status unconfirmed: **{counts['f2p_unconfirmed']}**")
     lines.append("")
     lines.append(f"_Fetch: {client.stats_line()}._")
     lines.append("")
