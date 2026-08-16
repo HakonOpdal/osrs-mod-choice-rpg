@@ -11,18 +11,19 @@ from the latest state. Keep it short — replace stale lines, don't append.**
 
 ## Current Status (updated 2026-08-16)
 
-- **v0.1 complete, playtested, committed** on branch `emdash/init-cepqd`
-  (latest: `fa0e003`). Build green, 19/19 tests.
-- Playtest T1–T8 all verified by Håkon (checklist: `docs/v0.1-test-handoff.html`).
-- Reviewed: /code-review self-pass (10 findings fixed) + multiple Codex rounds
-  (~15 findings fixed). Codex loop stopped per non-convergence rule.
+- **Stage-1 lanes done.** Lanes A (card overlay), B (region curation), C (wiki
+  scraper) merged to `main` (PRs #1–#3). Lane D (hub-submission prep: README,
+  icon, runelite-plugin.properties, checklist) lives on
+  `emdash/hub-submission-qx2ti` — hub PR itself deferred to v0.2.
+- README screenshot table is commented out until the four captures exist in
+  `docs/images/` (shot list is in the README); Håkon owns the screenshots.
+- Reviewed: /code-review self-pass + multiple Codex rounds across all lanes.
 - Accepted decisions (do not re-litigate): own-hitsplat kill attribution
   (15s window); dungeons inherit surface square via ry−100 rule; new profiles
   bank the first threshold (instant draft at login); unlisted NPCs and
   non-UNLOCKED ground earn no XP points, kills reject only LOCKED (trespass).
-- Next up (parked in ~/claude-projects/coding-agent-tasks.md): card-overlay
-  draft UI (Pokemon-card style), region border/naming curation + explicit
-  dungeon mappings, balancing pass, then v0.2 scope (item tags + skill locks).
+- Next up (parked in ~/claude-projects/coding-agent-tasks.md): balancing pass,
+  then v0.2 scope (item tags + skill locks), screenshots + hub submission.
 
 ## Key commands
 
