@@ -39,15 +39,17 @@ stacked planes share one id.
 | Karamja Volcano `(44,49)` | Karamja dungeon (SE) | `(44,149) (45,149)` |
 | Crandor `(44,50)` | Crandor tunnel + Elvarg lab (NW) | `(44,150) (45,150) (44,151)` |
 | Corsair Cove `(40,44)` | Corsair Cove Dungeon | `(30,140) (31,140)` |
-| Wilderness 41-48 Mid-West `(47,60)` | King Black Dragon lair | `(48,160)` |
+| Wilderness 41-48 Mid-West `(47,60)` | King Black Dragon lair | `(35,73)` |
 
 Notes on non-obvious choices:
 
-- **KBD lair `(48,160)`** *is* at `surface_ry + 100`, but the generic rule would
-  strip it to `(48,60)` = "Wilderness 41-48 Edgeville", the wrong column. The
-  explicit mapping pins it to the Lava Maze square `(47,60)` that actually gates
-  it. (Earlier drafts guessed region 9033 — that is the RS3 lair; OSRS KBD spawns
-  at world (3109, 10265) → `(48,160)`.)
+- **KBD lair `(35,73)` = region 9033.** This is the runtime region RuneLite
+  reports (`getRegionID()`) inside the lair, which is the *only* thing the plugin
+  reads. The OSRS Wiki lists the lair on its detached map (mapID 26) at world
+  (3109, 10265) → `(48,160)`, but that is a wiki-map display coordinate for the
+  instanced lair, not the runtime region — do not use it. The lair is nowhere
+  near `surface_ry + 100`, so the generic rule leaves it `UNCHARTED`; the
+  explicit mapping is what ties it to the Lava Maze square `(47,60)`.
 - **Edgeville ↔ Varrock seam `(49,154)`.** Both dungeons genuinely touch this
   64-tile square (Edgeville's NE passage vs. Varrock's western moss giants).
   It is assigned to **Varrock** because Edgeville's core is the 48-column;

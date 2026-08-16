@@ -90,7 +90,7 @@
     { "rx": 51, "ry": 59, "name": "Wilderness 33-40 Far East", "tier": 5 },
 
     { "rx": 46, "ry": 60, "name": "Wilderness 41-48 West", "tier": 5 },
-    { "rx": 47, "ry": 60, "name": "Wilderness 41-48 Mid-West", "tier": 5, "notes": "Lava Maze, KBD lair entrance", "underground": [[48, 160]] },
+    { "rx": 47, "ry": 60, "name": "Wilderness 41-48 Mid-West", "tier": 5, "notes": "Lava Maze, KBD lair entrance", "underground": [[35, 73]] },
     { "rx": 48, "ry": 60, "name": "Wilderness 41-48 Edgeville", "tier": 5 },
     { "rx": 49, "ry": 60, "name": "Wilderness 41-48 Center", "tier": 5 },
     { "rx": 50, "ry": 60, "name": "Wilderness 41-48 East", "tier": 5, "notes": "Demonic Ruins" },

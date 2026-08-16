@@ -102,7 +102,7 @@ public class ContentRepository
 			}
 			for (List<Integer> square : region.getUnderground())
 			{
-				if (square == null || square.size() != 2)
+				if (!isWellFormedSquare(square))
 				{
 					continue;
 				}
@@ -111,6 +111,12 @@ public class ContentRepository
 				undergroundOwner.putIfAbsent(squareId, region.id());
 			}
 		}
+	}
+
+	/** A well-formed underground square is a two-element [rx, ry] pair with no null coordinate. */
+	private static boolean isWellFormedSquare(List<Integer> square)
+	{
+		return square != null && square.size() == 2 && square.get(0) != null && square.get(1) != null;
 	}
 
 	private static <T> T readResource(Gson gson, String resourceName, Class<T> type)
@@ -238,9 +244,9 @@ public class ContentRepository
 			}
 			for (List<Integer> square : region.getUnderground())
 			{
-				if (square == null || square.size() != 2)
+				if (!isWellFormedSquare(square))
 				{
-					problems.add("Underground square must be an [rx, ry] pair in region: " + region.getName());
+					problems.add("Underground square must be a non-null [rx, ry] pair in region: " + region.getName());
 					continue;
 				}
 				int squareId = (square.get(0) << 8) | square.get(1);
