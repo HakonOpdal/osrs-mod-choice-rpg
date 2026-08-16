@@ -1,6 +1,7 @@
 package com.pathlocked.draft;
 
 import com.pathlocked.content.ContentRepository;
+import com.pathlocked.content.ItemTagDef;
 import com.pathlocked.content.MonsterDef;
 import com.pathlocked.content.RegionDef;
 import com.pathlocked.points.ThresholdCurve;
@@ -20,7 +21,9 @@ public class DraftService
 {
 	public static final int MAX_REROLLS = 1;
 	public static final int OFFERS_PER_CATEGORY = 3;
+	public static final int FREE_PICK_OFFERS = 6;
 	private static final int FREE_PICK_INTERVAL = 5;
+	private static final int KEYSTONE_INTERVAL = 10;
 
 	private final ContentRepository content;
 
@@ -54,6 +57,7 @@ public class DraftService
 		draft.choiceIndex = state.choiceIndex;
 		draft.offers = offers;
 		draft.rerollsUsed = 0;
+		draft.consumedOverride = state.nextCategoryOverride != null;
 		state.pendingDraft = draft;
 		return true;
 	}
@@ -82,13 +86,26 @@ public class DraftService
 			return null;
 		}
 		DraftOption picked = draft.offers.get(optionIndex);
-		if (picked.getCategory() == DraftCategory.REGION)
+		switch (picked.getCategory())
 		{
-			state.unlockedRegions.add(picked.getRegionId());
+			case REGION:
+				state.unlockedRegions.add(picked.getRegionId());
+				break;
+			case MONSTER:
+				state.unlockedMonsters.add(picked.getName().toLowerCase());
+				break;
+			case ITEM:
+				state.unlockedTags.add(picked.getName().toLowerCase());
+				break;
+			case SKILL:
+				state.unlockedSkills.add(picked.getName().toLowerCase());
+				break;
+			default:
+				return null;
 		}
-		else
+		if (draft.consumedOverride)
 		{
-			state.unlockedMonsters.add(picked.getName().toLowerCase());
+			state.nextCategoryOverride = null;
 		}
 
 		state.spentPoints += ThresholdCurve.cost(state.choiceIndex);
@@ -105,47 +122,86 @@ public class DraftService
 		return picked;
 	}
 
-	public DraftCategory categoryFor(int choiceIndex)
+	/**
+	 * The category the NEXT new draft will use: a pending override (instant
+	 * skill keystone for new/migrated profiles) wins over the rotation.
+	 */
+	public DraftCategory categoryFor(ProfileState state)
 	{
-		if (choiceIndex % FREE_PICK_INTERVAL == FREE_PICK_INTERVAL - 1)
+		if (state.nextCategoryOverride != null)
+		{
+			return state.nextCategoryOverride;
+		}
+		return rotationCategoryFor(state.choiceIndex);
+	}
+
+	/**
+	 * The fixed category rotation (1-based choice number): every 10th a skill
+	 * keystone, every other 5th a free pick, the rest wheeling through
+	 * region / monster / item.
+	 */
+	public DraftCategory rotationCategoryFor(int choiceIndex)
+	{
+		int choiceNumber = choiceIndex + 1;
+		if (choiceNumber % KEYSTONE_INTERVAL == 0)
+		{
+			return DraftCategory.SKILL;
+		}
+		if (choiceNumber % FREE_PICK_INTERVAL == 0)
 		{
 			return DraftCategory.FREE;
 		}
-		return choiceIndex % 2 == 0 ? DraftCategory.REGION : DraftCategory.MONSTER;
+		switch (choiceIndex % 3)
+		{
+			case 0:
+				return DraftCategory.REGION;
+			case 1:
+				return DraftCategory.MONSTER;
+			default:
+				return DraftCategory.ITEM;
+		}
 	}
 
 	List<DraftOption> rollOffers(ProfileState state, int rerollCount)
 	{
-		DraftCategory category = categoryFor(state.choiceIndex);
+		DraftCategory category = categoryFor(state);
 		Random rng = new Random(state.seed * 1_000_003L + state.choiceIndex * 101L + rerollCount);
 		int band = tierBand(state);
 
-		List<DraftOption> regionCandidates = regionFrontier(state);
-		List<DraftOption> monsterCandidates = monsterCandidates(state);
-
-		List<DraftOption> offers = new ArrayList<>();
+		List<DraftOption> primary;
 		switch (category)
 		{
 			case REGION:
-				offers.addAll(sample(regionCandidates, OFFERS_PER_CATEGORY, band, rng));
-				if (offers.isEmpty())
-				{
-					offers.addAll(sample(monsterCandidates, OFFERS_PER_CATEGORY, band, rng));
-				}
+				primary = regionFrontier(state);
 				break;
 			case MONSTER:
-				offers.addAll(sample(monsterCandidates, OFFERS_PER_CATEGORY, band, rng));
-				if (offers.isEmpty())
-				{
-					offers.addAll(sample(regionCandidates, OFFERS_PER_CATEGORY, band, rng));
-				}
+				primary = monsterCandidates(state);
 				break;
-			case FREE:
-				offers.addAll(sample(regionCandidates, OFFERS_PER_CATEGORY, band, rng));
-				offers.addAll(sample(monsterCandidates, OFFERS_PER_CATEGORY, band, rng));
+			case ITEM:
+				primary = itemCandidates(state, band);
+				break;
+			case SKILL:
+				primary = skillCandidates(state, band);
+				break;
+			default:
+				primary = new ArrayList<>();
 				break;
 		}
-		return offers;
+
+		if (category != DraftCategory.FREE && !primary.isEmpty())
+		{
+			return sample(primary, OFFERS_PER_CATEGORY, band, rng);
+		}
+
+		// FREE pick — or a category that ran dry, which degrades to one: a
+		// single weighted sample across everything still locked, so drafts
+		// keep flowing until the run is 100% complete.
+		List<DraftOption> combined = new ArrayList<>();
+		combined.addAll(regionFrontier(state));
+		combined.addAll(monsterCandidates(state));
+		combined.addAll(itemCandidates(state, band));
+		combined.addAll(skillCandidates(state, band));
+		return sample(combined, FREE_PICK_OFFERS, band, rng);
 	}
 
 	/**
@@ -209,6 +265,68 @@ public class DraftService
 				candidates.add(new DraftOption(DraftCategory.MONSTER, monster.getName(), 0,
 					monster.getTier(), "Monster · level " + monster.getCombatLevel()));
 			}
+		}
+		return candidates;
+	}
+
+	/**
+	 * Locked item tags, honoring the metal-tier chain: a tiered tag is only
+	 * offered once the tier below it is owned (bronze is always reachable).
+	 * Untiered tags (food, tools, ...) are always on the table.
+	 *
+	 * @param band used as the neutral weighting tier for untiered tags
+	 */
+	public List<DraftOption> itemCandidates(ProfileState state, int band)
+	{
+		List<DraftOption> candidates = new ArrayList<>();
+		for (ItemTagDef tag : content.getItemTags())
+		{
+			if (state.isTagUnlocked(tag.getName()))
+			{
+				continue;
+			}
+			if (tag.getTier() != null && tag.getTier() > 1
+				&& !previousTierUnlocked(state, tag.getTier()))
+			{
+				continue;
+			}
+			int weightTier = tag.getTier() != null ? tag.getTier() : band;
+			String detail = "Items · " + tag.getCategory()
+				+ (tag.getTier() != null ? " · tier " + tag.getTier() : "")
+				+ " · " + tag.getItemNames().size() + " items";
+			candidates.add(new DraftOption(DraftCategory.ITEM, tag.getName(), 0, weightTier, detail));
+		}
+		return candidates;
+	}
+
+	private boolean previousTierUnlocked(ProfileState state, int tier)
+	{
+		for (ItemTagDef tag : content.getItemTags())
+		{
+			if (tag.getTier() != null && tag.getTier() == tier - 1
+				&& state.isTagUnlocked(tag.getName()))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Locked skills. No prerequisites — every locked skill is always draftable,
+	 * weighted neutrally at the player's band.
+	 */
+	public List<DraftOption> skillCandidates(ProfileState state, int band)
+	{
+		List<DraftOption> candidates = new ArrayList<>();
+		for (String skillName : content.getSkillNames())
+		{
+			if (state.isSkillUnlocked(skillName))
+			{
+				continue;
+			}
+			candidates.add(new DraftOption(DraftCategory.SKILL, skillName, 0, band,
+				"Skill · keystone unlock"));
 		}
 		return candidates;
 	}

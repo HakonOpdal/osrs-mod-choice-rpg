@@ -2,9 +2,15 @@ package com.pathlocked.ui;
 
 import com.pathlocked.draft.DraftOption;
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -12,8 +18,14 @@ import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
+import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
+import javax.swing.JTree;
 import javax.swing.SwingUtilities;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeCellRenderer;
+import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.TreePath;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.PluginPanel;
 
@@ -38,6 +50,8 @@ public class PathlockedPanel extends PluginPanel
 	private final JPanel draftSection = new JPanel();
 	private final JLabel unlocksLabel = new JLabel();
 	private final JTextArea historyArea = new JTextArea();
+	private final JTree unlockTree = new JTree();
+	private final DefaultMutableTreeNode unlockRoot = new DefaultMutableTreeNode("Unlocks");
 
 	public PathlockedPanel(Actions actions)
 	{
@@ -96,7 +110,49 @@ public class PathlockedPanel extends PluginPanel
 		historyArea.setAlignmentX(Component.LEFT_ALIGNMENT);
 		column.add(historyArea);
 
-		add(column, BorderLayout.NORTH);
+		unlockTree.setModel(new DefaultTreeModel(unlockRoot));
+		unlockTree.setRootVisible(false);
+		unlockTree.setShowsRootHandles(true);
+		unlockTree.setBackground(ColorScheme.DARK_GRAY_COLOR);
+		unlockTree.setCellRenderer(new UnlockTreeRenderer());
+
+		JPanel treeTab = new JPanel(new BorderLayout());
+		treeTab.setBackground(ColorScheme.DARK_GRAY_COLOR);
+		treeTab.add(unlockTree, BorderLayout.NORTH);
+
+		JTabbedPane tabs = new JTabbedPane();
+		tabs.setBackground(ColorScheme.DARK_GRAY_COLOR);
+		tabs.addTab("Run", column);
+		tabs.addTab("Unlocks", treeTab);
+
+		add(tabs, BorderLayout.NORTH);
+	}
+
+	/**
+	 * Category nodes as "Regions 5/83"; leaves green when owned, grey when
+	 * locked. Kept free of icons — the color is the state.
+	 */
+	private static class UnlockTreeRenderer extends DefaultTreeCellRenderer
+	{
+		private static final Color UNLOCKED = new Color(122, 176, 134);
+		private static final Color LOCKED = new Color(130, 130, 130);
+
+		@Override
+		public Component getTreeCellRendererComponent(JTree tree, Object value, boolean selected,
+			boolean expanded, boolean leaf, int row, boolean hasFocus)
+		{
+			super.getTreeCellRendererComponent(tree, value, selected, expanded, leaf, row, hasFocus);
+			setIcon(null);
+			setBackgroundNonSelectionColor(ColorScheme.DARK_GRAY_COLOR);
+			Object payload = ((DefaultMutableTreeNode) value).getUserObject();
+			if (payload instanceof UnlockEntry)
+			{
+				UnlockEntry entry = (UnlockEntry) payload;
+				setText(entry.getName());
+				setForeground(entry.isUnlocked() ? UNLOCKED : LOCKED);
+			}
+			return this;
+		}
 	}
 
 	public void refresh(PanelSnapshot snapshot)
@@ -115,6 +171,7 @@ public class PathlockedPanel extends PluginPanel
 			draftSection.removeAll();
 			unlocksLabel.setText(" ");
 			historyArea.setText("");
+			rebuildUnlockTree(null);
 			revalidateAll();
 			return;
 		}
@@ -161,15 +218,90 @@ public class PathlockedPanel extends PluginPanel
 			draftSection.add(rerollButton);
 		}
 
-		unlocksLabel.setText(String.format("<html>Regions: %d / %d unlocked<br>Monsters: %d / %d unlocked<br>Illegal kills: %d · Ticks in locked regions: %d</html>",
+		unlocksLabel.setText(String.format("<html>Regions: %d / %d unlocked<br>Monsters: %d / %d unlocked<br>"
+				+ "Items: %d / %d tags · Skills: %d / %d<br>"
+				+ "Void XP (locked skills): %,d<br>"
+				+ "Illegal kills: %d · Ticks in locked regions: %d</html>",
 			snapshot.getRegionsUnlocked(), snapshot.getRegionsTotal(),
 			snapshot.getMonstersUnlocked(), snapshot.getMonstersTotal(),
+			snapshot.getTagsUnlocked(), snapshot.getTagsTotal(),
+			snapshot.getSkillsUnlocked(), snapshot.getSkillsTotal(),
+			snapshot.getVoidXp(),
 			snapshot.getIllegalKills(), snapshot.getViolationTicks()));
 
 		historyArea.setText(snapshot.getRecentHistory() == null ? ""
 			: String.join("\n", snapshot.getRecentHistory()));
 
+		rebuildUnlockTree(snapshot.getUnlockEntries());
+
 		revalidateAll();
+	}
+
+	/**
+	 * A category node that keeps its stable section name separate from the
+	 * displayed "Regions 5 / 83" label, so expansion state survives refreshes
+	 * where the counters change.
+	 */
+	private static class SectionNode extends DefaultMutableTreeNode
+	{
+		private final String section;
+
+		SectionNode(String section)
+		{
+			super(section);
+			this.section = section;
+		}
+	}
+
+	private void rebuildUnlockTree(List<UnlockEntry> entries)
+	{
+		// Remember which sections are open so a refresh doesn't collapse the tree
+		// under the player's cursor.
+		Set<String> expandedSections = new HashSet<>();
+		for (int i = 0; i < unlockRoot.getChildCount(); i++)
+		{
+			SectionNode section = (SectionNode) unlockRoot.getChildAt(i);
+			if (unlockTree.isExpanded(new TreePath(section.getPath())))
+			{
+				expandedSections.add(section.section);
+			}
+		}
+
+		unlockRoot.removeAllChildren();
+		if (entries != null)
+		{
+			Map<String, SectionNode> sections = new LinkedHashMap<>();
+			Map<String, Integer> owned = new LinkedHashMap<>();
+			for (UnlockEntry entry : entries)
+			{
+				SectionNode section = sections.computeIfAbsent(entry.getSection(),
+					name ->
+					{
+						SectionNode node = new SectionNode(name);
+						unlockRoot.add(node);
+						return node;
+					});
+				section.add(new DefaultMutableTreeNode(entry));
+				if (entry.isUnlocked())
+				{
+					owned.merge(entry.getSection(), 1, Integer::sum);
+				}
+			}
+			for (SectionNode section : sections.values())
+			{
+				section.setUserObject(section.section + " "
+					+ owned.getOrDefault(section.section, 0) + " / " + section.getChildCount());
+			}
+		}
+		((DefaultTreeModel) unlockTree.getModel()).reload();
+		for (int i = 0; i < unlockRoot.getChildCount(); i++)
+		{
+			SectionNode section = (SectionNode) unlockRoot.getChildAt(i);
+			if (expandedSections.contains(section.section))
+			{
+				unlockTree.expandPath(new TreePath(section.getPath()));
+			}
+		}
 	}
 
 	private void revalidateAll()

@@ -26,8 +26,25 @@ public class ContentDataTest
 		ContentRepository content = ContentRepository.load(new Gson());
 		assertTrue("Expected at least 70 regions", content.getRegions().size() >= 70);
 		assertTrue("Expected at least 30 monsters", content.getMonsters().size() >= 30);
+		assertTrue("Expected at least 15 item tags", content.getItemTags().size() >= 15);
+		assertTrue("Expected at least 10 skills", content.getSkillNames().size() >= 10);
 		assertTrue("Starter kit needs regions", !content.getStarterRegions().isEmpty());
 		assertTrue("Starter kit needs monsters", !content.getStarterMonsters().isEmpty());
+		assertTrue("Starter kit needs skills", !content.getStarterSkills().isEmpty());
+		assertTrue("Starter kit needs item tags", !content.getStarterTags().isEmpty());
+	}
+
+	@Test
+	public void itemLookupIsCaseInsensitiveAndSharedItemsListEveryTag()
+	{
+		ContentRepository content = ContentRepository.load(new Gson());
+		assertTrue("Bronze dagger should be tagged",
+			!content.tagsForItem("BRONZE DAGGER").isEmpty());
+		assertTrue("Unlisted items are uncharted",
+			content.tagsForItem("Twisted bow").isEmpty());
+		// Bronze pickaxe sits in both a metal tier and Tools; the lookup must
+		// return every containing tag or lock checks would be too strict.
+		assertTrue(content.tagsForItem("Bronze pickaxe").size() >= 2);
 	}
 
 	@Test

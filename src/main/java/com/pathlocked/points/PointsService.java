@@ -23,9 +23,10 @@ public class PointsService
 
 	/**
 	 * @param totalXp the new total XP in the skill
-	 * @return the countable XP delta (0 for combat skills and for the first
-	 * sighting of a skill, which primes the baseline). Fractional-point
-	 * carry-over is the caller's job so it can be persisted with the profile.
+	 * @return the raw XP delta (0 for the first sighting of a skill, which
+	 * primes the baseline). The caller decides what the delta is worth: combat
+	 * skills earn no points ({@link #isCombatSkill}), locked skills route to
+	 * void XP, and fractional-point carry-over is persisted with the profile.
 	 */
 	public int xpDelta(Skill skill, int totalXp)
 	{
@@ -34,11 +35,16 @@ public class PointsService
 		{
 			return 0;
 		}
-		if (COMBAT_SKILLS.contains(skill))
-		{
-			return 0;
-		}
 		return totalXp - previous;
+	}
+
+	/**
+	 * Combat skills never earn XP points — kills are credited separately by
+	 * combat level, so combat XP would double-dip.
+	 */
+	public static boolean isCombatSkill(Skill skill)
+	{
+		return COMBAT_SKILLS.contains(skill);
 	}
 
 	/**

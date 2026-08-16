@@ -1,5 +1,7 @@
 {
-  "comment": "Initial unlocks applied when a new profile is created. Tuned so the first draft lands within ~20 minutes of play.",
+  "comment": "Initial unlocks applied when a new profile is created. Tuned so the first draft lands within ~20 minutes of play. Skills: the combat basics only - the immediate first draft is a skill keystone, so the player's opening act is choosing their identity skill. Tags: enough gear/food/tools to make any starting skill choice playable.",
   "regions": ["Lumbridge", "Lumbridge Swamp", "Lumbridge Farms", "Draynor Village"],
-  "monsters": ["Chicken", "Cow", "Cow calf", "Goblin", "Giant rat", "Rat", "Man", "Woman"]
+  "monsters": ["Chicken", "Cow", "Cow calf", "Goblin", "Giant rat", "Rat", "Man", "Woman"],
+  "skills": ["Attack", "Strength", "Hitpoints"],
+  "tags": ["Bronze tier", "Basic food", "Tools"]
 }

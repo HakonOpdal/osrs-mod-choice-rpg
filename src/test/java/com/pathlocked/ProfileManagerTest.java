@@ -2,6 +2,7 @@ package com.pathlocked;
 
 import com.google.gson.Gson;
 import com.pathlocked.content.ContentRepository;
+import com.pathlocked.draft.DraftCategory;
 import com.pathlocked.points.ThresholdCurve;
 import com.pathlocked.unlocks.ProfileManager;
 import com.pathlocked.unlocks.ProfileState;
@@ -35,6 +36,10 @@ public class ProfileManagerTest
 			ThresholdCurve.cost(0), created.totalPoints);
 		assertEquals(content.getStarterRegions().size(), created.unlockedRegions.size());
 		assertEquals(content.getStarterMonsters().size(), created.unlockedMonsters.size());
+		assertEquals(content.getStarterSkills().size(), created.unlockedSkills.size());
+		assertEquals(content.getStarterTags().size(), created.unlockedTags.size());
+		assertEquals("First draft must be the identity-skill pick",
+			DraftCategory.SKILL, created.nextCategoryOverride);
 
 		created.totalPoints = 5000;
 		created.choiceIndex = 3;
@@ -46,6 +51,33 @@ public class ProfileManagerTest
 		assertEquals(5000, reloaded.totalPoints);
 		assertEquals(3, reloaded.choiceIndex);
 		assertEquals(999L, reloaded.seed);
+	}
+
+	@Test
+	public void v01ProfileMigratesToV2WithInstantSkillDraft() throws Exception
+	{
+		ContentRepository content = ContentRepository.load(new Gson());
+		File directory = temporaryFolder.getRoot();
+		ProfileManager manager = new ProfileManager(directory, new Gson());
+
+		// A mid-run v0.1 profile: no skill/tag fields at all.
+		String v01Json = "{\"seed\":7,\"totalPoints\":900,\"spentPoints\":875,\"choiceIndex\":2,"
+			+ "\"unlockedRegions\":[12850,12849],\"unlockedMonsters\":[\"chicken\"],"
+			+ "\"history\":[],\"violationTicks\":0,\"illegalKills\":0,\"xpRemainder\":0}";
+		File profileFile = new File(directory, "profile-77.json");
+		Files.write(profileFile.toPath(), v01Json.getBytes(StandardCharsets.UTF_8));
+
+		ProfileState migrated = manager.loadOrCreate(77L, content, 1L);
+		assertFalse(manager.isCreatedNewProfile());
+		assertEquals(content.getStarterSkills().size(), migrated.unlockedSkills.size());
+		assertEquals(content.getStarterTags().size(), migrated.unlockedTags.size());
+		assertEquals("Migration banks one threshold so the skill pick is instant",
+			900 + ThresholdCurve.cost(2), migrated.totalPoints);
+		assertEquals(DraftCategory.SKILL, migrated.nextCategoryOverride);
+
+		// Migration persists: a second load must not bank another threshold.
+		ProfileState reloaded = new ProfileManager(directory, new Gson()).loadOrCreate(77L, content, 1L);
+		assertEquals(migrated.totalPoints, reloaded.totalPoints);
 	}
 
 	@Test

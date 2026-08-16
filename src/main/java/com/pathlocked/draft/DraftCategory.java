@@ -5,7 +5,16 @@ public enum DraftCategory
 	REGION,
 	MONSTER,
 	/**
-	 * Every fifth choice: offers from both categories at once.
+	 * An item-tag unlock ("Bronze tier", "Basic food") — a class of items
+	 * unlocked as a unit.
+	 */
+	ITEM,
+	/**
+	 * A skill keystone — every tenth choice, the build-defining pick.
+	 */
+	SKILL,
+	/**
+	 * Every fifth choice: offers sampled from all categories at once.
 	 */
 	FREE
 }

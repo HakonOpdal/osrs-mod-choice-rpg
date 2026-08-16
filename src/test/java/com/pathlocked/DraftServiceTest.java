@@ -17,6 +17,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class DraftServiceTest
@@ -43,6 +44,14 @@ public class DraftServiceTest
 		{
 			state.unlockedMonsters.add(name.toLowerCase());
 		}
+		for (String name : content.getStarterSkills())
+		{
+			state.unlockedSkills.add(name.toLowerCase());
+		}
+		for (String name : content.getStarterTags())
+		{
+			state.unlockedTags.add(name.toLowerCase());
+		}
 		return state;
 	}
 
@@ -65,14 +74,85 @@ public class DraftServiceTest
 	}
 
 	@Test
-	public void categoryWheelAlternatesWithFreeEveryFifth()
+	public void categoryWheelRotatesWithFreeFifthAndSkillTenth()
 	{
-		assertEquals(DraftCategory.REGION, draftService.categoryFor(0));
-		assertEquals(DraftCategory.MONSTER, draftService.categoryFor(1));
-		assertEquals(DraftCategory.REGION, draftService.categoryFor(2));
-		assertEquals(DraftCategory.MONSTER, draftService.categoryFor(3));
-		assertEquals(DraftCategory.FREE, draftService.categoryFor(4));
-		assertEquals(DraftCategory.FREE, draftService.categoryFor(9));
+		assertEquals(DraftCategory.REGION, draftService.rotationCategoryFor(0));
+		assertEquals(DraftCategory.MONSTER, draftService.rotationCategoryFor(1));
+		assertEquals(DraftCategory.ITEM, draftService.rotationCategoryFor(2));
+		assertEquals(DraftCategory.REGION, draftService.rotationCategoryFor(3));
+		assertEquals(DraftCategory.FREE, draftService.rotationCategoryFor(4));
+		assertEquals(DraftCategory.ITEM, draftService.rotationCategoryFor(5));
+		assertEquals(DraftCategory.SKILL, draftService.rotationCategoryFor(9));
+		assertEquals(DraftCategory.FREE, draftService.rotationCategoryFor(14));
+		assertEquals(DraftCategory.SKILL, draftService.rotationCategoryFor(19));
+	}
+
+	@Test
+	public void overrideForcesSkillDraftAndClearsOnPick()
+	{
+		ProfileState state = newStarterProfile(42);
+		state.nextCategoryOverride = DraftCategory.SKILL;
+		state.totalPoints = ThresholdCurve.cost(0);
+
+		assertTrue(draftService.maybeStartDraft(state));
+		for (DraftOption option : state.pendingDraft.offers)
+		{
+			assertEquals(DraftCategory.SKILL, option.getCategory());
+		}
+		assertTrue("Reroll must keep the forced category", draftService.reroll(state));
+		for (DraftOption option : state.pendingDraft.offers)
+		{
+			assertEquals(DraftCategory.SKILL, option.getCategory());
+		}
+
+		int skillsBefore = state.unlockedSkills.size();
+		DraftOption picked = draftService.pick(state, 0);
+		assertNotNull(picked);
+		assertEquals(skillsBefore + 1, state.unlockedSkills.size());
+		assertTrue(state.isSkillUnlocked(picked.getName()));
+		assertNull("Override must clear once its draft is picked", state.nextCategoryOverride);
+	}
+
+	@Test
+	public void itemTierChainOnlyOffersTheNextTier()
+	{
+		ProfileState state = newStarterProfile(7);
+		// Starter tags include Bronze tier (tier 1), so tier 2 is the frontier.
+		List<String> names = draftService.itemCandidates(state, 1).stream()
+			.map(DraftOption::getName).collect(Collectors.toList());
+		assertTrue("Iron tier should be draftable after Bronze", names.contains("Iron tier"));
+		assertFalse("Steel tier must wait for Iron", names.contains("Steel tier"));
+		assertFalse("Unlocked starter tag must not be re-offered", names.contains("Bronze tier"));
+		assertTrue("Untiered tags are always draftable", names.contains("Basic runes"));
+	}
+
+	@Test
+	public void freePickMixesCategoriesUpToSixOffers()
+	{
+		ProfileState state = newStarterProfile(11);
+		state.choiceIndex = 4;
+		state.totalPoints = ThresholdCurve.cost(4) * 4;
+		assertTrue(draftService.maybeStartDraft(state));
+		assertTrue("Free pick offers at most 6 cards",
+			state.pendingDraft.offers.size() <= DraftService.FREE_PICK_OFFERS);
+		assertTrue("Free pick offers more than one category",
+			state.pendingDraft.offers.stream().map(DraftOption::getCategory).distinct().count() > 1);
+	}
+
+	@Test
+	public void itemPickUnlocksTheTag()
+	{
+		ProfileState state = newStarterProfile(3);
+		state.choiceIndex = 2;
+		state.totalPoints = ThresholdCurve.cost(2) * 3;
+		assertTrue(draftService.maybeStartDraft(state));
+		for (DraftOption option : state.pendingDraft.offers)
+		{
+			assertEquals(DraftCategory.ITEM, option.getCategory());
+		}
+		DraftOption picked = draftService.pick(state, 0);
+		assertNotNull(picked);
+		assertTrue(state.isTagUnlocked(picked.getName()));
 	}
 
 	@Test

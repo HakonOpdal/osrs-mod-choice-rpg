@@ -3,10 +3,12 @@ package com.pathlocked.unlocks;
 import com.google.gson.Gson;
 import com.pathlocked.content.ContentRepository;
 import com.pathlocked.content.RegionDef;
+import com.pathlocked.draft.DraftCategory;
 import com.pathlocked.points.ThresholdCurve;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -52,7 +54,12 @@ public class ProfileManager
 				ProfileState state = gson.fromJson(json, ProfileState.class);
 				if (state != null && state.unlockedRegions != null && !state.unlockedRegions.isEmpty())
 				{
-					return normalize(state);
+					ProfileState normalized = normalize(state);
+					if (migrateToV2(normalized, content))
+					{
+						save(accountHash, normalized);
+					}
+					return normalized;
 				}
 				log.warn("Profile file {} parsed to an empty state; recreating", file);
 			}
@@ -79,6 +86,18 @@ public class ProfileManager
 		{
 			state.unlockedMonsters = new LinkedHashSet<>();
 		}
+		if (state.unlockedTags == null)
+		{
+			state.unlockedTags = new LinkedHashSet<>();
+		}
+		if (state.unlockedSkills == null)
+		{
+			state.unlockedSkills = new LinkedHashSet<>();
+		}
+		if (state.voidXpBySkill == null)
+		{
+			state.voidXpBySkill = new LinkedHashMap<>();
+		}
 		if (state.history == null)
 		{
 			state.history = new ArrayList<>();
@@ -89,6 +108,38 @@ public class ProfileManager
 			state.pendingDraft = null;
 		}
 		return state;
+	}
+
+	/**
+	 * Upgrades a v0.1 profile (no skill/tag unlocks yet) in place: grants the
+	 * starter skills and tags, and banks one extra threshold with a forced
+	 * SKILL draft so the mid-run account picks its identity skill immediately
+	 * instead of waiting for the next keystone.
+	 *
+	 * @return true when a migration happened and the profile should be re-saved
+	 */
+	private static boolean migrateToV2(ProfileState state, ContentRepository content)
+	{
+		if (!state.unlockedSkills.isEmpty())
+		{
+			return false;
+		}
+		grantStarterSkillsAndTags(state, content);
+		state.totalPoints += ThresholdCurve.cost(state.choiceIndex);
+		state.nextCategoryOverride = DraftCategory.SKILL;
+		return true;
+	}
+
+	private static void grantStarterSkillsAndTags(ProfileState state, ContentRepository content)
+	{
+		for (String skillName : content.getStarterSkills())
+		{
+			state.unlockedSkills.add(skillName.toLowerCase());
+		}
+		for (String tagName : content.getStarterTags())
+		{
+			state.unlockedTags.add(tagName.toLowerCase());
+		}
 	}
 
 	private ProfileState createProfile(ContentRepository content, long seed)
@@ -110,6 +161,10 @@ public class ProfileManager
 		{
 			state.unlockedMonsters.add(monsterName.toLowerCase());
 		}
+		grantStarterSkillsAndTags(state, content);
+		// The banked first threshold plus a forced SKILL category makes the very
+		// first draft the identity-skill pick — the opening act of a run.
+		state.nextCategoryOverride = DraftCategory.SKILL;
 		return state;
 	}
 

@@ -3,8 +3,12 @@ package com.pathlocked;
 import com.google.gson.Gson;
 import com.google.inject.Provides;
 import com.pathlocked.content.ContentRepository;
+import com.pathlocked.content.ItemTagDef;
+import com.pathlocked.content.MonsterDef;
+import com.pathlocked.content.RegionDef;
 import com.pathlocked.draft.DraftOption;
 import com.pathlocked.draft.DraftService;
+import com.pathlocked.enforcement.ItemLockOverlay;
 import com.pathlocked.enforcement.RegionLockOverlay;
 import com.pathlocked.enforcement.RegionStatus;
 import com.pathlocked.points.PointsService;
@@ -12,13 +16,16 @@ import com.pathlocked.points.ThresholdCurve;
 import com.pathlocked.ui.PanelSnapshot;
 import com.pathlocked.ui.PathlockedPanel;
 import com.pathlocked.ui.StatusOverlay;
+import com.pathlocked.ui.UnlockEntry;
 import com.pathlocked.unlocks.ProfileManager;
 import com.pathlocked.unlocks.ProfileState;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
@@ -41,6 +48,7 @@ import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.NpcLootReceived;
+import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.ClientToolbar;
@@ -75,6 +83,9 @@ public class PathlockedPlugin extends Plugin implements PathlockedPanel.Actions
 	@Inject
 	private PathlockedConfig config;
 
+	@Inject
+	private ItemManager itemManager;
+
 	private ContentRepository content;
 	private DraftService draftService;
 	private PointsService pointsService;
@@ -86,10 +97,22 @@ public class PathlockedPlugin extends Plugin implements PathlockedPanel.Actions
 	private NavigationButton navButton;
 	private RegionLockOverlay regionOverlay;
 	private StatusOverlay statusOverlay;
+	private ItemLockOverlay itemLockOverlay;
 
 	private boolean dirty;
 	private int ticksSinceSave;
 	private RegionStatus lastAnnouncedStatus = RegionStatus.UNLOCKED;
+	/**
+	 * Skills already warned about this session, so locked-skill training nags
+	 * once instead of on every XP drop.
+	 */
+	private final Set<Skill> announcedVoidSkills = EnumSet.noneOf(Skill.class);
+	/**
+	 * Canonical item id -> locked?, rebuilt lazily; item-name lookups run per
+	 * menu entry and per rendered inventory slot, so they must not hit
+	 * ItemComposition every time. Invalidated on any unlock or profile change.
+	 */
+	private final Map<Integer, Boolean> itemLockCache = new HashMap<>();
 
 	private volatile RegionStatus currentRegionStatus = RegionStatus.UNLOCKED;
 	private volatile String currentRegionName = "";
@@ -117,8 +140,10 @@ public class PathlockedPlugin extends Plugin implements PathlockedPanel.Actions
 
 		regionOverlay = new RegionLockOverlay(client, this, config);
 		statusOverlay = new StatusOverlay(this, config);
+		itemLockOverlay = new ItemLockOverlay(this, config);
 		overlayManager.add(regionOverlay);
 		overlayManager.add(statusOverlay);
+		overlayManager.add(itemLockOverlay);
 
 		refreshPanel();
 	}
@@ -163,9 +188,12 @@ public class PathlockedPlugin extends Plugin implements PathlockedPanel.Actions
 		}
 		overlayManager.remove(regionOverlay);
 		overlayManager.remove(statusOverlay);
+		overlayManager.remove(itemLockOverlay);
 		clientToolbar.removeNavigation(navButton);
 		profile = null;
 		pendingDraft = false;
+		itemLockCache.clear();
+		announcedVoidSkills.clear();
 		currentRegionStatus = RegionStatus.UNLOCKED;
 		lastAnnouncedStatus = RegionStatus.UNLOCKED;
 	}
@@ -203,6 +231,8 @@ public class PathlockedPlugin extends Plugin implements PathlockedPanel.Actions
 				// stale entries would misattribute kills on the next world.
 				damagedNpcs.clear();
 				recentKillCredits.clear();
+				itemLockCache.clear();
+				announcedVoidSkills.clear();
 				lastAnnouncedStatus = RegionStatus.UNLOCKED;
 				refreshPanel();
 				break;
@@ -260,6 +290,26 @@ public class PathlockedPlugin extends Plugin implements PathlockedPanel.Actions
 		int xpDelta = pointsService.xpDelta(event.getSkill(), event.getXp());
 		if (profile == null || xpDelta <= 0)
 		{
+			return;
+		}
+		Skill skill = event.getSkill();
+		if (!profile.isSkillUnlocked(skill.getName()))
+		{
+			// Void XP: gained in a locked skill, earns nothing, tracked so the
+			// honor-mode violation stays visible. Also covers locked combat
+			// skills (e.g. training Defence before drafting it).
+			profile.voidXpBySkill.merge(skill.getName().toLowerCase(), (long) xpDelta, Long::sum);
+			dirty = true;
+			if (announcedVoidSkills.add(skill))
+			{
+				announce(skill.getName() + " is locked - that XP is void and earns no points.");
+			}
+			refreshPanel();
+			return;
+		}
+		if (PointsService.isCombatSkill(skill))
+		{
+			// Kills are credited by combat level; combat XP would double-dip.
 			return;
 		}
 		if (liveRegionStatus() != RegionStatus.UNLOCKED)
@@ -364,34 +414,103 @@ public class PathlockedPlugin extends Plugin implements PathlockedPanel.Actions
 		refreshPanel();
 	}
 
+	/**
+	 * The item menu options that consume or equip an item — the actions an
+	 * item-tag lock restricts. Examine, Drop, Use, banking etc. stay available
+	 * (locked items are holdable, just not usable — the quarantine principle).
+	 */
+	private static final Set<String> ITEM_LOCK_OPTIONS = Set.of("Wield", "Wear", "Equip", "Eat", "Drink");
+
 	@Subscribe
 	public void onMenuEntryAdded(MenuEntryAdded event)
 	{
-		if (profile == null || !config.enforceMonsters() || !"Attack".equals(event.getOption()))
+		if (profile == null)
 		{
 			return;
 		}
-		NPC npc = event.getMenuEntry().getNpc();
-		if (npc != null && isMonsterBlocked(npc.getName()))
+		if (config.enforceMonsters() && "Attack".equals(event.getOption()))
 		{
-			event.getMenuEntry().setDeprioritized(true);
+			NPC npc = event.getMenuEntry().getNpc();
+			if (npc != null && isMonsterBlocked(npc.getName()))
+			{
+				event.getMenuEntry().setDeprioritized(true);
+			}
+			return;
+		}
+		if (config.enforceItems() && ITEM_LOCK_OPTIONS.contains(event.getOption()))
+		{
+			int itemId = event.getMenuEntry().getItemId();
+			if (itemId > 0 && isItemIdLocked(itemId))
+			{
+				event.getMenuEntry().setDeprioritized(true);
+			}
 		}
 	}
 
 	@Subscribe
 	public void onMenuOptionClicked(MenuOptionClicked event)
 	{
-		if (profile == null || !config.enforceMonsters() || !config.hardBlockAttack()
-			|| !"Attack".equals(event.getMenuOption()))
+		if (profile == null)
 		{
 			return;
 		}
-		NPC npc = event.getMenuEntry().getNpc();
-		if (npc != null && isMonsterBlocked(npc.getName()))
+		if (config.enforceMonsters() && config.hardBlockAttack()
+			&& "Attack".equals(event.getMenuOption()))
 		{
-			event.consume();
-			announce(Text.removeTags(npc.getName()) + " is locked. Unlock it through a draft first.");
+			NPC npc = event.getMenuEntry().getNpc();
+			if (npc != null && isMonsterBlocked(npc.getName()))
+			{
+				event.consume();
+				announce(Text.removeTags(npc.getName()) + " is locked. Unlock it through a draft first.");
+			}
+			return;
 		}
+		if (config.enforceItems() && config.hardBlockItemUse()
+			&& ITEM_LOCK_OPTIONS.contains(event.getMenuOption()))
+		{
+			int itemId = event.getMenuEntry().getItemId();
+			if (itemId > 0 && isItemIdLocked(itemId))
+			{
+				event.consume();
+				String itemName = itemManager.getItemComposition(itemManager.canonicalize(itemId)).getName();
+				announce(itemName + " is locked" + lockingTagHint(itemName) + ".");
+			}
+		}
+	}
+
+	/**
+	 * " - draft 'Bronze tier' to use it", or empty when the tag lookup
+	 * unexpectedly finds nothing.
+	 */
+	private String lockingTagHint(String itemName)
+	{
+		List<ItemTagDef> tags = content.tagsForItem(itemName);
+		return tags.isEmpty() ? "" : " - draft '" + tags.get(0).getName() + "' to use it";
+	}
+
+	/**
+	 * True when the (canonicalized) item is listed under at least one tag and
+	 * none of its tags are unlocked. Unlisted items are uncharted: never
+	 * enforced, like unlisted NPCs.
+	 */
+	public boolean isItemIdLocked(int itemId)
+	{
+		if (profile == null || content == null)
+		{
+			return false;
+		}
+		int canonicalId = itemManager.canonicalize(itemId);
+		Boolean cached = itemLockCache.get(canonicalId);
+		if (cached != null)
+		{
+			return cached;
+		}
+		String itemName = itemManager.getItemComposition(canonicalId).getName();
+		List<ItemTagDef> tags = content.tagsForItem(itemName);
+		boolean locked = !tags.isEmpty()
+			&& tags.stream().noneMatch(tag -> profile.isTagUnlocked(tag.getName()));
+		itemLockCache.put(canonicalId, locked);
+		return locked;
 	}
 
 	@Override
@@ -419,6 +538,8 @@ public class PathlockedPlugin extends Plugin implements PathlockedPanel.Actions
 			{
 				pendingDraft = false;
 				dirty = true;
+				// A tag unlock changes item lock states; rebuild lazily.
+				itemLockCache.clear();
 				announce("Unlocked: " + picked.getName() + "!");
 				saveProfile();
 				refreshPanel();
@@ -535,6 +656,8 @@ public class PathlockedPlugin extends Plugin implements PathlockedPanel.Actions
 		profile = profileManager.loadOrCreate(accountHash, content, seed);
 		profileAccountHash = accountHash;
 		pendingDraft = profile.pendingDraft != null;
+		itemLockCache.clear();
+		announcedVoidSkills.clear();
 		// Baselines must come from the client, not from the first StatChanged:
 		// when the plugin is enabled mid-session the login burst already passed,
 		// and first-event priming would swallow the next real XP gain per skill.
@@ -660,10 +783,42 @@ public class PathlockedPlugin extends Plugin implements PathlockedPanel.Actions
 			.regionsTotal(content.getRegions().size())
 			.monstersUnlocked(profile.unlockedMonsters.size())
 			.monstersTotal(content.getMonsters().size())
+			.tagsUnlocked(profile.unlockedTags.size())
+			.tagsTotal(content.getItemTags().size())
+			.skillsUnlocked(profile.unlockedSkills.size())
+			.skillsTotal(content.getSkillNames().size())
+			.voidXp(profile.voidXpTotal())
+			.unlockEntries(buildUnlockEntries())
 			.recentHistory(recentHistory)
 			.illegalKills(profile.illegalKills)
 			.violationTicks(profile.violationTicks)
 			.build());
+	}
+
+	private List<UnlockEntry> buildUnlockEntries()
+	{
+		List<UnlockEntry> entries = new ArrayList<>();
+		for (RegionDef region : content.getRegions())
+		{
+			entries.add(new UnlockEntry("Regions", region.getName(),
+				profile.isRegionUnlocked(region.id())));
+		}
+		for (MonsterDef monster : content.getMonsters())
+		{
+			entries.add(new UnlockEntry("Monsters", monster.getName(),
+				profile.isMonsterUnlocked(monster.getName())));
+		}
+		for (ItemTagDef tag : content.getItemTags())
+		{
+			entries.add(new UnlockEntry("Items", tag.getName(),
+				profile.isTagUnlocked(tag.getName())));
+		}
+		for (String skillName : content.getSkillNames())
+		{
+			entries.add(new UnlockEntry("Skills", skillName,
+				profile.isSkillUnlocked(skillName)));
+		}
+		return entries;
 	}
 
 	private boolean isMonsterBlocked(String npcName)

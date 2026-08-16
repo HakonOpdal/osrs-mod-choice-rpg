@@ -2,6 +2,7 @@ package com.pathlocked;
 
 import com.google.gson.Gson;
 import com.pathlocked.content.ContentRepository;
+import com.pathlocked.draft.DraftCategory;
 import com.pathlocked.draft.DraftService;
 import com.pathlocked.points.ThresholdCurve;
 import com.pathlocked.unlocks.ProfileState;
@@ -25,7 +26,8 @@ public class DraftSimulationTest
 	{
 		ContentRepository content = ContentRepository.load(new Gson());
 		DraftService draftService = new DraftService(content);
-		int totalUnlockables = content.getRegions().size() + content.getMonsters().size();
+		int totalUnlockables = content.getRegions().size() + content.getMonsters().size()
+			+ content.getItemTags().size() + content.getSkillNames().size();
 
 		for (long seed = 0; seed < SEEDS; seed++)
 		{
@@ -39,6 +41,16 @@ public class DraftSimulationTest
 			{
 				state.unlockedMonsters.add(name.toLowerCase());
 			}
+			for (String name : content.getStarterSkills())
+			{
+				state.unlockedSkills.add(name.toLowerCase());
+			}
+			for (String name : content.getStarterTags())
+			{
+				state.unlockedTags.add(name.toLowerCase());
+			}
+			// Mirror a real new profile: the first draft is the forced skill pick.
+			state.nextCategoryOverride = DraftCategory.SKILL;
 
 			Random pickRng = new Random(seed);
 			int safety = totalUnlockables + 10;
@@ -59,6 +71,10 @@ public class DraftSimulationTest
 				content.getRegions().size(), state.unlockedRegions.size());
 			assertEquals("Seed " + seed + " could not unlock every monster",
 				content.getMonsters().size(), state.unlockedMonsters.size());
+			assertEquals("Seed " + seed + " could not unlock every item tag",
+				content.getItemTags().size(), state.unlockedTags.size());
+			assertEquals("Seed " + seed + " could not unlock every skill",
+				content.getSkillNames().size(), state.unlockedSkills.size());
 		}
 	}
 }

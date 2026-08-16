@@ -27,6 +27,19 @@ public class PanelSnapshot
 	int regionsTotal;
 	int monstersUnlocked;
 	int monstersTotal;
+	int tagsUnlocked;
+	int tagsTotal;
+	int skillsUnlocked;
+	int skillsTotal;
+	/**
+	 * Total XP gained in locked skills — void XP, earns no points.
+	 */
+	long voidXp;
+	/**
+	 * Every unlockable with its owned state, for the unlock-tree tab. Null
+	 * when logged out.
+	 */
+	List<UnlockEntry> unlockEntries;
 	List<String> recentHistory;
 	long illegalKills;
 	long violationTicks;
