@@ -468,6 +468,13 @@ public class PathlockedPlugin extends Plugin implements PathlockedPanel.Actions
 		}
 		if (!content.isKnownRegion(regionId))
 		{
+			// Nonstandard dungeons (Corsair Cove Dungeon, ...) carry an explicit
+			// surface-owner mapping; consult it before the generic rule.
+			Integer explicitOwner = content.surfaceOwnerOf(regionId);
+			if (explicitOwner != null && content.isKnownRegion(explicitOwner))
+			{
+				return profile.isRegionUnlocked(explicitOwner) ? RegionStatus.UNLOCKED : RegionStatus.LOCKED;
+			}
 			// Underground map squares sit 6400 tiles north of their surface
 			// square, i.e. region ry + 100; let dungeons (Dwarven Mine, Varrock
 			// sewers, ...) inherit the surface square's lock status.
@@ -583,6 +590,11 @@ public class PathlockedPlugin extends Plugin implements PathlockedPanel.Actions
 		}
 		// Same surface normalization as regionStatus, so a locked dungeon warns
 		// with its surface region's name instead of "Uncharted".
+		Integer explicitOwner = content.surfaceOwnerOf(regionId);
+		if (explicitOwner != null && content.isKnownRegion(explicitOwner))
+		{
+			return content.regionById(explicitOwner).getName() + " (underground)";
+		}
 		int surfaceId = regionId - 100;
 		if ((regionId & 0xFF) >= 100 && content.isKnownRegion(surfaceId))
 		{
