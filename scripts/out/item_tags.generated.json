@@ -1,8 +1,8 @@
 {
   "comment": "AUTO-GENERATED candidate item tags from the OSRS Wiki via scripts/generate_item_tags.py. NOT the final item_tags.json — this is input for human curation next stage. Item names (not ids) match the name-based convention of monsters.json. See docs/item-tags-schema.md.",
   "source": "https://oldschool.runescape.wiki (category intersections, F2P only)",
-  "tagCount": 22,
-  "totalItemSlots": 519,
+  "tagCount": 59,
+  "totalItemSlots": 785,
   "tags": [
     {
       "name": "Bronze tier",
@@ -41,24 +41,86 @@
         "Bronze warhammer",
         "Giant bronze dagger"
       ],
-      "notes": "F2P wearable bronze gear (weapons + armour)."
+      "notes": "F2P wearable bronze gear (all slots)."
     },
     {
-      "name": "Bronze melee weapons",
+      "name": "Bronze helm",
       "tier": 1,
       "category": "equipment",
       "itemNames": [
-        "Bronze 2h sword",
+        "Bronze full helm",
+        "Bronze full helm (g)",
+        "Bronze full helm (t)",
+        "Bronze med helm"
+      ],
+      "notes": "F2P bronze helm (Head slot items)."
+    },
+    {
+      "name": "Bronze body",
+      "tier": 1,
+      "category": "equipment",
+      "itemNames": [
+        "Bronze chainbody",
+        "Bronze platebody",
+        "Bronze platebody (g)",
+        "Bronze platebody (t)"
+      ],
+      "notes": "F2P bronze body (Body slot items)."
+    },
+    {
+      "name": "Bronze legs",
+      "tier": 1,
+      "category": "equipment",
+      "itemNames": [
+        "Bronze platelegs",
+        "Bronze platelegs (g)",
+        "Bronze platelegs (t)",
+        "Bronze plateskirt",
+        "Bronze plateskirt (g)",
+        "Bronze plateskirt (t)"
+      ],
+      "notes": "F2P bronze legs (Legs slot items)."
+    },
+    {
+      "name": "Bronze shield",
+      "tier": 1,
+      "category": "equipment",
+      "itemNames": [
+        "Bronze kiteshield",
+        "Bronze kiteshield (g)",
+        "Bronze kiteshield (t)",
+        "Bronze sq shield"
+      ],
+      "notes": "F2P bronze shield (Shield slot items)."
+    },
+    {
+      "name": "Bronze weapon (1h)",
+      "tier": 1,
+      "category": "equipment",
+      "itemNames": [
+        "Broken axe (bronze)",
+        "Broken pickaxe (bronze)",
+        "Bronze axe",
         "Bronze battleaxe",
         "Bronze dagger",
         "Bronze longsword",
         "Bronze mace",
+        "Bronze pickaxe",
         "Bronze scimitar",
         "Bronze sword",
-        "Bronze warhammer",
+        "Bronze warhammer"
+      ],
+      "notes": "F2P bronze weapon (1h) (Weapon slot items)."
+    },
+    {
+      "name": "Bronze weapon (2h)",
+      "tier": 1,
+      "category": "equipment",
+      "itemNames": [
+        "Bronze 2h sword",
         "Giant bronze dagger"
       ],
-      "notes": "F2P bronze melee weapons only."
+      "notes": "F2P bronze weapon (2h) (Two-handed slot items)."
     },
     {
       "name": "Iron tier",
@@ -95,23 +157,85 @@
         "Iron sword",
         "Iron warhammer"
       ],
-      "notes": "F2P wearable iron gear (weapons + armour)."
+      "notes": "F2P wearable iron gear (all slots)."
     },
     {
-      "name": "Iron melee weapons",
+      "name": "Iron helm",
       "tier": 2,
       "category": "equipment",
       "itemNames": [
-        "Iron 2h sword",
+        "Iron full helm",
+        "Iron full helm (g)",
+        "Iron full helm (t)",
+        "Iron med helm"
+      ],
+      "notes": "F2P iron helm (Head slot items)."
+    },
+    {
+      "name": "Iron body",
+      "tier": 2,
+      "category": "equipment",
+      "itemNames": [
+        "Iron chainbody",
+        "Iron platebody",
+        "Iron platebody (g)",
+        "Iron platebody (t)"
+      ],
+      "notes": "F2P iron body (Body slot items)."
+    },
+    {
+      "name": "Iron legs",
+      "tier": 2,
+      "category": "equipment",
+      "itemNames": [
+        "Iron platelegs",
+        "Iron platelegs (g)",
+        "Iron platelegs (t)",
+        "Iron plateskirt",
+        "Iron plateskirt (g)",
+        "Iron plateskirt (t)"
+      ],
+      "notes": "F2P iron legs (Legs slot items)."
+    },
+    {
+      "name": "Iron shield",
+      "tier": 2,
+      "category": "equipment",
+      "itemNames": [
+        "Iron kiteshield",
+        "Iron kiteshield (g)",
+        "Iron kiteshield (t)",
+        "Iron sq shield"
+      ],
+      "notes": "F2P iron shield (Shield slot items)."
+    },
+    {
+      "name": "Iron weapon (1h)",
+      "tier": 2,
+      "category": "equipment",
+      "itemNames": [
+        "Broken axe (iron)",
+        "Broken pickaxe (iron)",
+        "Iron axe",
         "Iron battleaxe",
         "Iron dagger",
         "Iron longsword",
         "Iron mace",
+        "Iron pickaxe",
         "Iron scimitar",
         "Iron sword",
         "Iron warhammer"
       ],
-      "notes": "F2P iron melee weapons only."
+      "notes": "F2P iron weapon (1h) (Weapon slot items)."
+    },
+    {
+      "name": "Iron weapon (2h)",
+      "tier": 2,
+      "category": "equipment",
+      "itemNames": [
+        "Iron 2h sword"
+      ],
+      "notes": "F2P iron weapon (2h) (Two-handed slot items)."
     },
     {
       "name": "Steel tier",
@@ -148,23 +272,85 @@
         "Steel sword",
         "Steel warhammer"
       ],
-      "notes": "F2P wearable steel gear (weapons + armour)."
+      "notes": "F2P wearable steel gear (all slots)."
     },
     {
-      "name": "Steel melee weapons",
+      "name": "Steel helm",
       "tier": 3,
       "category": "equipment",
       "itemNames": [
-        "Steel 2h sword",
+        "Steel full helm",
+        "Steel full helm (g)",
+        "Steel full helm (t)",
+        "Steel med helm"
+      ],
+      "notes": "F2P steel helm (Head slot items)."
+    },
+    {
+      "name": "Steel body",
+      "tier": 3,
+      "category": "equipment",
+      "itemNames": [
+        "Steel chainbody",
+        "Steel platebody",
+        "Steel platebody (g)",
+        "Steel platebody (t)"
+      ],
+      "notes": "F2P steel body (Body slot items)."
+    },
+    {
+      "name": "Steel legs",
+      "tier": 3,
+      "category": "equipment",
+      "itemNames": [
+        "Steel platelegs",
+        "Steel platelegs (g)",
+        "Steel platelegs (t)",
+        "Steel plateskirt",
+        "Steel plateskirt (g)",
+        "Steel plateskirt (t)"
+      ],
+      "notes": "F2P steel legs (Legs slot items)."
+    },
+    {
+      "name": "Steel shield",
+      "tier": 3,
+      "category": "equipment",
+      "itemNames": [
+        "Steel kiteshield",
+        "Steel kiteshield (g)",
+        "Steel kiteshield (t)",
+        "Steel sq shield"
+      ],
+      "notes": "F2P steel shield (Shield slot items)."
+    },
+    {
+      "name": "Steel weapon (1h)",
+      "tier": 3,
+      "category": "equipment",
+      "itemNames": [
+        "Broken axe (steel)",
+        "Broken pickaxe (steel)",
+        "Steel axe",
         "Steel battleaxe",
         "Steel dagger",
         "Steel longsword",
         "Steel mace",
+        "Steel pickaxe",
         "Steel scimitar",
         "Steel sword",
         "Steel warhammer"
       ],
-      "notes": "F2P steel melee weapons only."
+      "notes": "F2P steel weapon (1h) (Weapon slot items)."
+    },
+    {
+      "name": "Steel weapon (2h)",
+      "tier": 3,
+      "category": "equipment",
+      "itemNames": [
+        "Steel 2h sword"
+      ],
+      "notes": "F2P steel weapon (2h) (Two-handed slot items)."
     },
     {
       "name": "Black tier",
@@ -215,23 +401,99 @@
         "Black sword",
         "Black warhammer"
       ],
-      "notes": "F2P wearable black gear (weapons + armour)."
+      "notes": "F2P wearable black gear (all slots)."
     },
     {
-      "name": "Black melee weapons",
+      "name": "Black helm",
       "tier": 4,
       "category": "equipment",
       "itemNames": [
-        "Black 2h sword",
+        "Black full helm",
+        "Black full helm (g)",
+        "Black full helm (t)",
+        "Black helm (h1)",
+        "Black helm (h2)",
+        "Black helm (h3)",
+        "Black helm (h4)",
+        "Black helm (h5)",
+        "Black med helm"
+      ],
+      "notes": "F2P black helm (Head slot items)."
+    },
+    {
+      "name": "Black body",
+      "tier": 4,
+      "category": "equipment",
+      "itemNames": [
+        "Black chainbody",
+        "Black platebody",
+        "Black platebody (g)",
+        "Black platebody (h1)",
+        "Black platebody (h2)",
+        "Black platebody (h3)",
+        "Black platebody (h4)",
+        "Black platebody (h5)",
+        "Black platebody (t)"
+      ],
+      "notes": "F2P black body (Body slot items)."
+    },
+    {
+      "name": "Black legs",
+      "tier": 4,
+      "category": "equipment",
+      "itemNames": [
+        "Black platelegs",
+        "Black platelegs (g)",
+        "Black platelegs (t)",
+        "Black plateskirt",
+        "Black plateskirt (g)",
+        "Black plateskirt (t)"
+      ],
+      "notes": "F2P black legs (Legs slot items)."
+    },
+    {
+      "name": "Black shield",
+      "tier": 4,
+      "category": "equipment",
+      "itemNames": [
+        "Black kiteshield",
+        "Black kiteshield (g)",
+        "Black kiteshield (t)",
+        "Black shield (h1)",
+        "Black shield (h2)",
+        "Black shield (h3)",
+        "Black shield (h4)",
+        "Black shield (h5)",
+        "Black sq shield"
+      ],
+      "notes": "F2P black shield (Shield slot items)."
+    },
+    {
+      "name": "Black weapon (1h)",
+      "tier": 4,
+      "category": "equipment",
+      "itemNames": [
+        "Black axe",
         "Black battleaxe",
         "Black dagger",
         "Black longsword",
         "Black mace",
+        "Black pickaxe",
         "Black scimitar",
         "Black sword",
-        "Black warhammer"
+        "Black warhammer",
+        "Broken axe (black)"
       ],
-      "notes": "F2P black melee weapons only."
+      "notes": "F2P black weapon (1h) (Weapon slot items)."
+    },
+    {
+      "name": "Black weapon (2h)",
+      "tier": 4,
+      "category": "equipment",
+      "itemNames": [
+        "Black 2h sword"
+      ],
+      "notes": "F2P black weapon (2h) (Two-handed slot items)."
     },
     {
       "name": "Mithril tier",
@@ -268,23 +530,85 @@
         "Mithril sword",
         "Mithril warhammer"
       ],
-      "notes": "F2P wearable mithril gear (weapons + armour)."
+      "notes": "F2P wearable mithril gear (all slots)."
     },
     {
-      "name": "Mithril melee weapons",
+      "name": "Mithril helm",
       "tier": 5,
       "category": "equipment",
       "itemNames": [
-        "Mithril 2h sword",
+        "Mithril full helm",
+        "Mithril full helm (g)",
+        "Mithril full helm (t)",
+        "Mithril med helm"
+      ],
+      "notes": "F2P mithril helm (Head slot items)."
+    },
+    {
+      "name": "Mithril body",
+      "tier": 5,
+      "category": "equipment",
+      "itemNames": [
+        "Mithril chainbody",
+        "Mithril platebody",
+        "Mithril platebody (g)",
+        "Mithril platebody (t)"
+      ],
+      "notes": "F2P mithril body (Body slot items)."
+    },
+    {
+      "name": "Mithril legs",
+      "tier": 5,
+      "category": "equipment",
+      "itemNames": [
+        "Mithril platelegs",
+        "Mithril platelegs (g)",
+        "Mithril platelegs (t)",
+        "Mithril plateskirt",
+        "Mithril plateskirt (g)",
+        "Mithril plateskirt (t)"
+      ],
+      "notes": "F2P mithril legs (Legs slot items)."
+    },
+    {
+      "name": "Mithril shield",
+      "tier": 5,
+      "category": "equipment",
+      "itemNames": [
+        "Mithril kiteshield",
+        "Mithril kiteshield (g)",
+        "Mithril kiteshield (t)",
+        "Mithril sq shield"
+      ],
+      "notes": "F2P mithril shield (Shield slot items)."
+    },
+    {
+      "name": "Mithril weapon (1h)",
+      "tier": 5,
+      "category": "equipment",
+      "itemNames": [
+        "Broken axe (mithril)",
+        "Broken pickaxe (mithril)",
+        "Mithril axe",
         "Mithril battleaxe",
         "Mithril dagger",
         "Mithril longsword",
         "Mithril mace",
+        "Mithril pickaxe",
         "Mithril scimitar",
         "Mithril sword",
         "Mithril warhammer"
       ],
-      "notes": "F2P mithril melee weapons only."
+      "notes": "F2P mithril weapon (1h) (Weapon slot items)."
+    },
+    {
+      "name": "Mithril weapon (2h)",
+      "tier": 5,
+      "category": "equipment",
+      "itemNames": [
+        "Mithril 2h sword"
+      ],
+      "notes": "F2P mithril weapon (2h) (Two-handed slot items)."
     },
     {
       "name": "Adamant tier",
@@ -336,23 +660,100 @@
         "Adamant sword",
         "Adamant warhammer"
       ],
-      "notes": "F2P wearable adamant gear (weapons + armour)."
+      "notes": "F2P wearable adamant gear (all slots)."
     },
     {
-      "name": "Adamant melee weapons",
+      "name": "Adamant helm",
       "tier": 6,
       "category": "equipment",
       "itemNames": [
-        "Adamant 2h sword",
+        "Adamant full helm",
+        "Adamant full helm (g)",
+        "Adamant full helm (t)",
+        "Adamant helm (h1)",
+        "Adamant helm (h2)",
+        "Adamant helm (h3)",
+        "Adamant helm (h4)",
+        "Adamant helm (h5)",
+        "Adamant med helm"
+      ],
+      "notes": "F2P adamant helm (Head slot items)."
+    },
+    {
+      "name": "Adamant body",
+      "tier": 6,
+      "category": "equipment",
+      "itemNames": [
+        "Adamant chainbody",
+        "Adamant platebody",
+        "Adamant platebody (g)",
+        "Adamant platebody (h1)",
+        "Adamant platebody (h2)",
+        "Adamant platebody (h3)",
+        "Adamant platebody (h4)",
+        "Adamant platebody (h5)",
+        "Adamant platebody (t)"
+      ],
+      "notes": "F2P adamant body (Body slot items)."
+    },
+    {
+      "name": "Adamant legs",
+      "tier": 6,
+      "category": "equipment",
+      "itemNames": [
+        "Adamant platelegs",
+        "Adamant platelegs (g)",
+        "Adamant platelegs (t)",
+        "Adamant plateskirt",
+        "Adamant plateskirt (g)",
+        "Adamant plateskirt (t)"
+      ],
+      "notes": "F2P adamant legs (Legs slot items)."
+    },
+    {
+      "name": "Adamant shield",
+      "tier": 6,
+      "category": "equipment",
+      "itemNames": [
+        "Adamant kiteshield",
+        "Adamant kiteshield (g)",
+        "Adamant kiteshield (t)",
+        "Adamant shield (h1)",
+        "Adamant shield (h2)",
+        "Adamant shield (h3)",
+        "Adamant shield (h4)",
+        "Adamant shield (h5)",
+        "Adamant sq shield"
+      ],
+      "notes": "F2P adamant shield (Shield slot items)."
+    },
+    {
+      "name": "Adamant weapon (1h)",
+      "tier": 6,
+      "category": "equipment",
+      "itemNames": [
+        "Adamant axe",
         "Adamant battleaxe",
         "Adamant dagger",
         "Adamant longsword",
         "Adamant mace",
+        "Adamant pickaxe",
         "Adamant scimitar",
         "Adamant sword",
-        "Adamant warhammer"
+        "Adamant warhammer",
+        "Broken axe (adamant)",
+        "Broken pickaxe (adamant)"
       ],
-      "notes": "F2P adamant melee weapons only."
+      "notes": "F2P adamant weapon (1h) (Weapon slot items)."
+    },
+    {
+      "name": "Adamant weapon (2h)",
+      "tier": 6,
+      "category": "equipment",
+      "itemNames": [
+        "Adamant 2h sword"
+      ],
+      "notes": "F2P adamant weapon (2h) (Two-handed slot items)."
     },
     {
       "name": "Rune tier",
@@ -451,20 +852,130 @@
         "Zamorak platelegs",
         "Zamorak plateskirt"
       ],
-      "notes": "F2P wearable rune gear (weapons + armour)."
+      "notes": "F2P wearable rune gear (all slots)."
     },
     {
-      "name": "Rune melee weapons",
+      "name": "Rune helm",
       "tier": 7,
       "category": "equipment",
       "itemNames": [
-        "Gilded 2h sword",
+        "Ancient full helm",
+        "Armadyl full helm",
+        "Bandos full helm",
+        "Dragonstone full helm",
+        "Gilded full helm",
+        "Gilded med helm",
+        "Guthix full helm",
+        "Rune full helm",
+        "Rune full helm (g)",
+        "Rune full helm (t)",
+        "Rune helm (h1)",
+        "Rune helm (h2)",
+        "Rune helm (h3)",
+        "Rune helm (h4)",
+        "Rune helm (h5)",
+        "Rune med helm",
+        "Saradomin full helm",
+        "Zamorak full helm"
+      ],
+      "notes": "F2P rune helm (Head slot items)."
+    },
+    {
+      "name": "Rune body",
+      "tier": 7,
+      "category": "equipment",
+      "itemNames": [
+        "Ancient platebody",
+        "Armadyl platebody",
+        "Bandos platebody",
+        "Dragonstone platebody",
+        "Gilded chainbody",
+        "Gilded platebody",
+        "Guthix platebody",
+        "Rune chainbody",
+        "Rune platebody",
+        "Rune platebody (g)",
+        "Rune platebody (h1)",
+        "Rune platebody (h2)",
+        "Rune platebody (h3)",
+        "Rune platebody (h4)",
+        "Rune platebody (h5)",
+        "Rune platebody (t)",
+        "Saradomin platebody",
+        "Zamorak platebody"
+      ],
+      "notes": "F2P rune body (Body slot items)."
+    },
+    {
+      "name": "Rune legs",
+      "tier": 7,
+      "category": "equipment",
+      "itemNames": [
+        "Ancient platelegs",
+        "Ancient plateskirt",
+        "Armadyl platelegs",
+        "Armadyl plateskirt",
+        "Bandos platelegs",
+        "Bandos plateskirt",
+        "Dragonstone platelegs",
+        "Gilded platelegs",
+        "Gilded plateskirt",
+        "Guthix platelegs",
+        "Guthix plateskirt",
+        "Rune platelegs",
+        "Rune platelegs (g)",
+        "Rune platelegs (t)",
+        "Rune plateskirt",
+        "Rune plateskirt (g)",
+        "Rune plateskirt (t)",
+        "Saradomin platelegs",
+        "Saradomin plateskirt",
+        "Zamorak platelegs",
+        "Zamorak plateskirt"
+      ],
+      "notes": "F2P rune legs (Legs slot items)."
+    },
+    {
+      "name": "Rune shield",
+      "tier": 7,
+      "category": "equipment",
+      "itemNames": [
+        "Ancient kiteshield",
+        "Armadyl kiteshield",
+        "Bandos kiteshield",
+        "Gilded kiteshield",
+        "Gilded sq shield",
+        "Guthix kiteshield",
+        "Rune kiteshield",
+        "Rune kiteshield (g)",
+        "Rune kiteshield (t)",
+        "Rune shield (h1)",
+        "Rune shield (h2)",
+        "Rune shield (h3)",
+        "Rune shield (h4)",
+        "Rune shield (h5)",
+        "Rune sq shield",
+        "Saradomin kiteshield",
+        "Zamorak kiteshield"
+      ],
+      "notes": "F2P rune shield (Shield slot items)."
+    },
+    {
+      "name": "Rune weapon (1h)",
+      "tier": 7,
+      "category": "equipment",
+      "itemNames": [
+        "Broken axe (rune)",
+        "Broken pickaxe (rune)",
+        "Gilded axe",
+        "Gilded pickaxe",
         "Gilded scimitar",
-        "Rune 2h sword",
+        "Rune axe",
         "Rune battleaxe",
         "Rune dagger",
         "Rune longsword",
         "Rune mace",
+        "Rune pickaxe",
         "Rune scimitar",
         "Rune scimitar (guthix)",
         "Rune scimitar (saradomin)",
@@ -472,7 +983,17 @@
         "Rune sword",
         "Rune warhammer"
       ],
-      "notes": "F2P rune melee weapons only."
+      "notes": "F2P rune weapon (1h) (Weapon slot items)."
+    },
+    {
+      "name": "Rune weapon (2h)",
+      "tier": 7,
+      "category": "equipment",
+      "itemNames": [
+        "Gilded 2h sword",
+        "Rune 2h sword"
+      ],
+      "notes": "F2P rune weapon (2h) (Two-handed slot items)."
     },
     {
       "name": "Basic food",
@@ -698,6 +1219,47 @@
         "Training arrows"
       ],
       "notes": "F2P ranged ammunition (arrows, bolts, etc.). Uses the equipment-slot category — the 'Ammunition' category is cannonballs only."
+    },
+    {
+      "name": "Ranged weapons",
+      "tier": null,
+      "category": "equipment",
+      "itemNames": [
+        "Crossbow",
+        "Cursed goblin bow",
+        "Longbow",
+        "Maple longbow",
+        "Maple shortbow",
+        "Oak longbow",
+        "Oak shortbow",
+        "Phoenix crossbow",
+        "Shortbow",
+        "Starter bow",
+        "Training bow",
+        "Willow comp bow",
+        "Willow longbow",
+        "Willow shortbow"
+      ],
+      "notes": "F2P ranged weapons (bows, crossbows)."
+    },
+    {
+      "name": "Basic potions",
+      "tier": null,
+      "category": "food",
+      "itemNames": [
+        "Antipoison",
+        "Cadava potion",
+        "Castlewars brew",
+        "Energy potion",
+        "Explosive potion",
+        "Growth potion",
+        "Murky potion",
+        "Potion (Apothecary)",
+        "Spectral potion",
+        "Strength potion",
+        "Voice potion"
+      ],
+      "notes": "F2P potions."
     }
   ]
 }

@@ -21,6 +21,7 @@ Design goals (see scripts/README.md):
 
 from __future__ import annotations
 
+import email.utils
 import hashlib
 import json
 import os
@@ -29,6 +30,12 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+
+# MediaWiki error codes that are transient (retry) rather than deterministic (a
+# genuine query bug like `badvalue`). Returned inside an HTTP 200 body.
+TRANSIENT_ERROR_CODES = frozenset(
+    {"maxlag", "readonly", "ratelimited", "internal_api_error_DBQueryError", "internal_api_error_DBConnectionError"}
+)
 
 API_ENDPOINT = "https://oldschool.runescape.wiki/api.php"
 
@@ -72,6 +79,30 @@ def _build_ssl_context() -> ssl.SSLContext:
     return ssl.create_default_context()
 
 
+def _parse_retry_after(header_value, fallback_seconds: float) -> float:
+    """Parse a ``Retry-After`` header (numeric seconds OR an HTTP date).
+
+    Per RFC 7231 the header may be either an integer number of seconds or an
+    HTTP-date. ``float()`` alone raises ``ValueError`` on the date form, so we
+    handle both and fall back to the exponential delay when it's unparseable.
+    """
+    if not header_value:
+        return fallback_seconds
+    try:
+        return float(header_value)
+    except ValueError:
+        pass
+    try:
+        parsed_date = email.utils.parsedate_to_datetime(header_value)
+    except (TypeError, ValueError):
+        return fallback_seconds
+    if parsed_date is not None:
+        seconds_until = parsed_date.timestamp() - time.time()
+        if seconds_until > 0:
+            return seconds_until
+    return fallback_seconds
+
+
 class WikiClient:
     """A small, cached, polite wrapper over the OSRS Wiki API."""
 
@@ -107,7 +138,11 @@ class WikiClient:
 
         payload = self._fetch_live_with_retries(url)
 
-        if self.use_cache:
+        # Never cache an error payload: transient errors (readonly/ratelimited)
+        # would poison the cache and deterministic ones (badvalue) are cheap to
+        # re-raise from a live call. Callers still receive the payload and decide
+        # how to react (e.g. bucket_query raises WikiQueryError on `error`).
+        if self.use_cache and not (isinstance(payload, dict) and "error" in payload):
             with open(cache_path, "w", encoding="utf-8") as cache_file:
                 json.dump(payload, cache_file)
         return payload
@@ -123,7 +158,7 @@ class WikiClient:
             except urllib.error.HTTPError as error:
                 # 429 (rate limited) / 503 (maxlag) → honor Retry-After and back off.
                 if error.code in (429, 503) and attempt < max_attempts:
-                    retry_after = float(error.headers.get("Retry-After", attempt * 2))
+                    retry_after = _parse_retry_after(error.headers.get("Retry-After"), attempt * 2)
                     if self.verbose:
                         print(f"  [wiki] HTTP {error.code}; backing off {retry_after:.0f}s")
                     time.sleep(retry_after)
@@ -135,16 +170,17 @@ class WikiClient:
                     continue
                 raise
 
-            # maxlag is reported as a normal 200 with an error body on some paths;
-            # handle the documented error code defensively.
-            if isinstance(payload, dict) and payload.get("error", {}).get("code") == "maxlag":
+            # Some transient errors (maxlag, readonly, ratelimited, DB errors) are
+            # reported as a normal HTTP 200 with an error body. Retry those; on the
+            # final attempt raise rather than returning (and caching) the payload.
+            error_code = payload.get("error", {}).get("code") if isinstance(payload, dict) else None
+            if error_code in TRANSIENT_ERROR_CODES:
                 if attempt < max_attempts:
                     time.sleep(attempt * 2)
                     continue
-                # Persistent replica lag after every retry is transient — raise
-                # rather than returning (and thus caching) the error payload,
-                # which would poison the cache for later normal runs.
-                raise RuntimeError(f"Wiki maxlag persisted after {max_attempts} attempts: {url}")
+                raise RuntimeError(
+                    f"Wiki transient error `{error_code}` persisted after {max_attempts} attempts: {url}"
+                )
             return payload
         raise RuntimeError(f"Exhausted retries fetching {url}")
 

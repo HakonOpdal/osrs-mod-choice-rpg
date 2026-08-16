@@ -33,9 +33,24 @@ _METAL_TIERS = [
     ("Rune", 7),
 ]
 
+# Equipment slots the metal tiers actually populate. Each is a wiki
+# "<X> slot items" category we intersect with the material to get that
+# tier's piece for that slot — this is the "equipment tier/slot" breadth the
+# lane prompt asks for.
+_EQUIPMENT_SLOTS = [
+    ("helm", "Head slot items"),
+    ("body", "Body slot items"),
+    ("legs", "Legs slot items"),
+    ("shield", "Shield slot items"),
+    ("weapon (1h)", "Weapon slot items"),
+    ("weapon (2h)", "Two-handed slot items"),
+]
+
 TAG_DEFINITIONS = []
 
-# Equipment by metal tier (all wearable gear of that material).
+# Equipment by metal tier: one broad "tier" tag plus one tag per slot, for each
+# of the seven F2P metal tiers (bronze..rune). That yields tier × slot candidate
+# granularity for the next stage to pick from.
 for _material, _tier in _METAL_TIERS:
     TAG_DEFINITIONS.append(
         {
@@ -44,20 +59,20 @@ for _material, _tier in _METAL_TIERS:
             "category": "equipment",
             "all_of": [_material, "Equipable items"],
             "none_of": [],
-            "notes": f"F2P wearable {_material.lower()} gear (weapons + armour).",
+            "notes": f"F2P wearable {_material.lower()} gear (all slots).",
         }
     )
-    # A finer split some balancing may want: just the melee weapons of that tier.
-    TAG_DEFINITIONS.append(
-        {
-            "name": f"{_material} melee weapons",
-            "tier": _tier,
-            "category": "equipment",
-            "all_of": [_material, "Melee weapons"],
-            "none_of": [],
-            "notes": f"F2P {_material.lower()} melee weapons only.",
-        }
-    )
+    for _slot_suffix, _slot_category in _EQUIPMENT_SLOTS:
+        TAG_DEFINITIONS.append(
+            {
+                "name": f"{_material} {_slot_suffix}",
+                "tier": _tier,
+                "category": "equipment",
+                "all_of": [_material, _slot_category],
+                "none_of": [],
+                "notes": f"F2P {_material.lower()} {_slot_suffix} ({_slot_category}).",
+            }
+        )
 
 # Consumables and gathered resources (tier-less; category carries the meaning).
 TAG_DEFINITIONS.extend(
@@ -126,6 +141,22 @@ TAG_DEFINITIONS.extend(
             "none_of": [],
             "notes": "F2P ranged ammunition (arrows, bolts, etc.). "
             "Uses the equipment-slot category — the 'Ammunition' category is cannonballs only.",
+        },
+        {
+            "name": "Ranged weapons",
+            "tier": None,
+            "category": "equipment",
+            "all_of": ["Ranged weapons"],
+            "none_of": [],
+            "notes": "F2P ranged weapons (bows, crossbows).",
+        },
+        {
+            "name": "Basic potions",
+            "tier": None,
+            "category": "food",
+            "all_of": ["Potions"],
+            "none_of": [],
+            "notes": "F2P potions.",
         },
     ]
 )
