@@ -1,9 +1,11 @@
 # Pathlocked
 
-**A choice-unlock gamemode for Old School RuneScape.** The whole world starts
-locked — every region and every monster. You earn points just by playing, and
-when you've banked enough, the game hands you a **draft**: pick 1 of 3 unlocks.
-Your account, your route. No two runs look the same.
+**A choice-unlock gamemode for Old School RuneScape.** The world starts locked
+apart from a small starter patch — Lumbridge, its swamp and farms, Draynor
+Village, and eight low-level creatures to train on. You earn points just by
+playing, and when you've banked enough, the game hands you a **draft**: pick
+one unlock from the cards on offer. Your account, your route. No two runs look
+the same.
 
 Think Bronzeman's restriction meets a roguelite draft: instead of grinding a
 fixed path, you *choose* where to expand next, one card at a time.
@@ -35,9 +37,9 @@ with the names in the commented-out table below, then un-comment it._
 
 ### Shot list (scenes to capture)
 
-1. **Draft cards** — the side panel with a pending draft open: three offers
-   (a mix of region + monster on a free-pick draft), the reroll button, and the
-   "You have earned a choice!" state.
+1. **Draft cards** — the side panel with a pending draft open: the three
+   offers (or a six-card free-pick draft mixing regions and monsters), the
+   reroll button, and the "You have earned a choice!" state.
 2. **Locked-region banner + shading** — stand just inside a locked region: the
    status overlay banner ("You entered a locked region: …") plus the tinted
    ground tiles of the locked square.
@@ -62,9 +64,10 @@ best hero image if you can capture one._
 | Non-combat XP | **1 point per 10 XP** (any skill except the combat skills) |
 | Killing an **unlocked** listed monster | **points = its combat level** (minimum 1) |
 
-Combat XP is deliberately excluded so kills don't double-count. Points only
-accrue on **unlocked ground** — skilling or killing while trespassing in a
-locked region earns nothing.
+Combat XP is deliberately excluded so kills don't double-count. Skilling XP
+counts only on **unlocked ground**, and nothing at all is earned while
+trespassing in a **locked** region; kills of unlocked monsters do still pay out
+on *uncharted* ground (unmapped dungeons and the like).
 
 ### 2. Hit a threshold
 
@@ -86,16 +89,18 @@ first login. When you can afford the next one, a draft opens automatically.
 
 ### 3. Draft your unlock
 
-Each draft offers **1 of 3**, drawn from your **frontier**:
+Each draft offers **3 cards — pick 1**, drawn from your **frontier**:
 
 - **Region drafts** offer locked regions **adjacent to** one you already own.
 - **Monster drafts** offer locked monsters whose **home region is unlocked**.
-- Every **5th** draft is a **free pick** — both categories on the table at once.
+- Every **5th** draft is a **free pick** — both categories on the table at
+  once, up to 3 regions *and* 3 monsters (six cards).
 
 You get **one reroll** per draft. Offers are **seeded and deterministic** from
-your account (or a shared seed), so a reroll is stable across relogs and two
-players on the same seed see the same cards — great for races. The frontier rule
-guarantees you can never soft-lock: there is always something reachable to pick.
+your account (or a shared seed), so a reroll is stable across relogs, and two
+players on the same seed who make the same picks see the same cards. The
+frontier rule guarantees you can never soft-lock: there is always something
+reachable to pick.
 
 ---
 
@@ -142,7 +147,9 @@ feels at home next to those gamemodes.
 
 **Can I share a run with a friend?**
 Yes — set the same **Seed override** before either of you creates a profile.
-Identical seeds produce identical draft offers at every threshold.
+Identical seeds produce identical draft offers for as long as you also make the
+same picks: offers are drawn from your unlock frontier, so once your choices
+diverge, your cards can too. Great for races played pick-for-pick.
 
 ---
 
