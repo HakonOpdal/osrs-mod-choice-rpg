@@ -24,11 +24,12 @@ OUTPUT_PATH = os.path.join(
 
 # Titles that are category index/portal pages rather than real items. The
 # cmtype=page + namespace-0 filter removes most cruft; these are the stragglers
-# (the self-named index page inside each category).
+# (a self-named index page inside a category, or a material category's landing
+# page). NOTE: "Logs" is deliberately NOT here — the page titled "Logs" is the
+# actual standard F2P logs item, so filtering it would drop a core item.
 _INDEX_PAGE_TITLES = {
     "Food",
     "Runes",
-    "Logs",
     "Ores",
     "Seeds",
     "Tools",

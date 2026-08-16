@@ -2,7 +2,7 @@
   "comment": "AUTO-GENERATED candidate item tags from the OSRS Wiki via scripts/generate_item_tags.py. NOT the final item_tags.json — this is input for human curation next stage. Item names (not ids) match the name-based convention of monsters.json. See docs/item-tags-schema.md.",
   "source": "https://oldschool.runescape.wiki (category intersections, F2P only)",
   "tagCount": 22,
-  "totalItemSlots": 518,
+  "totalItemSlots": 519,
   "tags": [
     {
       "name": "Bronze tier",
@@ -543,6 +543,7 @@
       "category": "resource",
       "itemNames": [
         "Deadwood log",
+        "Logs",
         "Logs and kindling",
         "Maple logs",
         "Oak logs",

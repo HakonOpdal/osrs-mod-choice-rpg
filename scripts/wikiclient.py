@@ -141,6 +141,10 @@ class WikiClient:
                 if attempt < max_attempts:
                     time.sleep(attempt * 2)
                     continue
+                # Persistent replica lag after every retry is transient — raise
+                # rather than returning (and thus caching) the error payload,
+                # which would poison the cache for later normal runs.
+                raise RuntimeError(f"Wiki maxlag persisted after {max_attempts} attempts: {url}")
             return payload
         raise RuntimeError(f"Exhausted retries fetching {url}")
 
