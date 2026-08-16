@@ -113,10 +113,22 @@ public class ContentRepository
 		}
 	}
 
-	/** A well-formed underground square is a two-element [rx, ry] pair with no null coordinate. */
+	/**
+	 * A well-formed underground square is a two-element [rx, ry] pair whose
+	 * coordinates are both non-null and in {@code 0..255} — the range the
+	 * {@code (rx << 8) | ry} region-id encoding can represent without aliasing
+	 * one square onto another (e.g. [46, 256] would collide with [47, 0]).
+	 */
 	private static boolean isWellFormedSquare(List<Integer> square)
 	{
-		return square != null && square.size() == 2 && square.get(0) != null && square.get(1) != null;
+		if (square == null || square.size() != 2)
+		{
+			return false;
+		}
+		Integer rx = square.get(0);
+		Integer ry = square.get(1);
+		return rx != null && ry != null
+			&& rx >= 0 && rx <= 255 && ry >= 0 && ry <= 255;
 	}
 
 	private static <T> T readResource(Gson gson, String resourceName, Class<T> type)
@@ -246,7 +258,8 @@ public class ContentRepository
 			{
 				if (!isWellFormedSquare(square))
 				{
-					problems.add("Underground square must be a non-null [rx, ry] pair in region: " + region.getName());
+					problems.add("Underground square must be an [rx, ry] pair with both coords in 0..255 in region: "
+						+ region.getName());
 					continue;
 				}
 				int squareId = (square.get(0) << 8) | square.get(1);
