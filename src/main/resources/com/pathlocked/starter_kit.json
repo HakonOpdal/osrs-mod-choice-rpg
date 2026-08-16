@@ -1,0 +1,5 @@
+{
+  "comment": "Initial unlocks applied when a new profile is created. Tuned so the first draft lands within ~20 minutes of play.",
+  "regions": ["Lumbridge", "Lumbridge Swamp", "Lumbridge Farms", "Draynor Village"],
+  "monsters": ["Chicken", "Cow", "Cow calf", "Goblin", "Giant rat", "Rat", "Man", "Woman"]
+}

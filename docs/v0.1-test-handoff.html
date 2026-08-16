@@ -1,0 +1,163 @@
+<meta charset="utf-8">
+<title>init-cepqd · Pathlocked v0.1 Test Handoff</title>
+<style>
+  :root { --bg:#f5f3ee; --card:#fffdf8; --ink:#2b2926; --muted:#6e6a62; --line:#e2ddd2;
+    --accent:#7a5c3e; --good:#4a6151; --bad:#8a4b3c; --chip:#efe9dd; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+    font:15px/1.55 -apple-system,"Helvetica Neue",Segoe UI,sans-serif; padding:40px 20px 80px; }
+  main { max-width:880px; margin:0 auto; }
+  h1 { font-size:26px; margin:0 0 4px; }
+  .sub { color:var(--muted); margin:0 0 24px; }
+  h2 { font-size:18px; margin:34px 0 10px; padding-bottom:6px; border-bottom:2px solid var(--line); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 18px; margin:12px 0; }
+  .card h3 { margin:0 0 6px; font-size:15.5px; }
+  .card .id { color:var(--accent); font-weight:700; margin-right:6px; }
+  .steps, .checks { margin:6px 0 6px 0; padding-left:20px; }
+  .steps li, .checks li { margin:3px 0; }
+  .label { font-size:12px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin-top:8px; }
+  pre { background:#2e2b27; color:#e8e3d8; border-radius:8px; padding:10px 14px; overflow-x:auto;
+    font:12.5px/1.5 ui-monospace,"SF Mono",Menlo,monospace; }
+  .controls { display:flex; gap:8px; align-items:center; margin-top:10px; flex-wrap:wrap; }
+  .toggle { border:1px solid var(--line); background:var(--chip); border-radius:6px;
+    padding:5px 12px; cursor:pointer; font-size:13.5px; }
+  .toggle.pass.active { background:#e7efe4; border-color:var(--good); color:var(--good); font-weight:700; }
+  .toggle.fail.active { background:#f6e8e4; border-color:var(--bad); color:var(--bad); font-weight:700; }
+  textarea { width:100%; min-height:44px; margin-top:8px; border:1px solid var(--line); border-radius:6px;
+    padding:6px 8px; font:13.5px -apple-system,sans-serif; background:#fff; color:var(--ink); resize:vertical; }
+  #copyBtn { background:var(--accent); color:#fff; border:none; border-radius:8px; padding:10px 18px;
+    font-size:15px; cursor:pointer; margin-top:16px; }
+  #copyBtn:active { opacity:.8; }
+  .note { color:var(--muted); font-size:13.5px; }
+</style>
+
+<main>
+<h1>Pathlocked v0.1 — Test Handoff</h1>
+<p class="sub">Worktree <code>init-cepqd</code> · build green, 18/18 unit tests, 3 review rounds (self + 2× Codex fix rounds, 3rd Codex round clean)</p>
+
+<h2>How to launch</h2>
+<div class="card">
+  <p>Runs a real RuneLite client with the plugin injected. Use a <strong>throwaway/alt F2P account</strong> — a fresh profile gets created on first login.</p>
+  <pre>cd /Users/hakonopdal/emdash/worktrees/osrs-mod-choice-rpg/emdash/init-cepqd
+JAVA_HOME=/Library/Java/JavaVirtualMachines/jbr-17.0.5-osx-aarch64-b653.14/Contents/Home ./gradlew run</pre>
+  <p class="note">First launch downloads the client. Log in, then find the bronze padlock icon in the RuneLite sidebar (right edge) — that's the Pathlocked panel. Your run profile is stored at <code>~/.runelite/pathlocked/profile-&lt;hash&gt;.json</code>.</p>
+</div>
+
+<h2>Checklist</h2>
+<div id="cards"></div>
+
+<button id="copyBtn">Copy for Claude</button>
+<p class="note">Selections persist in this browser (localStorage). The button copies every marked item + comments so you can paste them straight back into the session.</p>
+</main>
+
+<script>
+const TASKS = [
+  { id: "T1", title: "Plugin loads & welcome message", steps: [
+      "Launch via the command above and log in on the test account."
+    ], checks: [
+      "Client starts without errors; bronze padlock icon appears in the sidebar.",
+      "Chat shows: 'Pathlocked: Welcome to Pathlocked! The world starts locked...' (first login only).",
+      "Panel shows 'Choice 1', points bar at 0 / 250, 'Regions: 4 / 83', 'Monsters: 8 / 47'."
+    ]},
+  { id: "T2", title: "XP earns points (non-combat only)", steps: [
+      "Chop a tree or catch shrimp near Lumbridge for a minute.",
+      "Then kill something with melee for comparison."
+    ], checks: [
+      "Panel points rise ~1 point per 10 XP for Woodcutting/Fishing.",
+      "Pure combat XP (Attack/Str/Def/HP) does NOT move the counter by itself."
+    ]},
+  { id: "T3", title: "Kills earn combat-level points", steps: [
+      "Kill a Chicken, a Cow, and a Goblin (all starter-unlocked)."
+    ], checks: [
+      "Each kill adds points roughly equal to the NPC's combat level (1–3 pts each).",
+      "Points appear when the loot drops."
+    ]},
+  { id: "T4", title: "Locked monster is blocked", steps: [
+      "Walk to the Lumbridge sheep pen or find a Duck/Spider (NOT in the starter kit).",
+      "Hover it, then try to attack (left-click and right-click menu)."
+    ], checks: [
+      "'Attack' is not the left-click default on the locked NPC (deprioritized).",
+      "Forcing the attack via right-click is consumed: nothing happens + chat says '<name> is locked. Unlock it through a draft first.'"
+    ]},
+  { id: "T5", title: "Locked region warning + shading", steps: [
+      "Walk east from Lumbridge toward Al Kharid gate, or north toward Varrock (both locked at start).",
+      "Cross the map-square boundary."
+    ], checks: [
+      "Top-center banner shows 'LOCKED REGION' with the region name once you cross.",
+      "Ground tiles ahead of the boundary are tinted red-brown (within ~10 tiles of you).",
+      "Chat announces 'You entered a locked region: ...' once (not spamming every tick)."
+    ]},
+  { id: "T6", title: "First draft at 250 points", steps: [
+      "Earn 250 points (10–20 min of skilling + chicken/cow kills).",
+      "Watch for the banner, open the panel."
+    ], checks: [
+      "Banner shows 'Choice ready!' + chat message when you hit 250.",
+      "Panel shows exactly 3 region cards (first draft is always regions), each adjacent to your unlocked area (e.g. Lumbridge Swamp West, Al Kharid, Wizards' Tower...).",
+      "Reroll button works once, then disables; picking a card announces 'Unlocked: <name>!' and the region count goes to 5."
+    ]},
+  { id: "T7", title: "Persistence across relog", steps: [
+      "After picking at least one unlock, log out to the login screen, then log back in.",
+      "Also check ~/.runelite/pathlocked/ for the profile JSON."
+    ], checks: [
+      "Points, unlocks, and choice number survive the relog exactly.",
+      "If you had an unpicked draft pending, the SAME 3 offers reappear (deterministic).",
+      "profile-<hash>.json exists and contains your history."
+    ]},
+  { id: "T8", title: "Unlocked region no longer warns", steps: [
+      "Walk into the region you just unlocked in T6."
+    ], checks: [
+      "No banner, no tile shading, no chat warning there anymore.",
+      "Killing an unlocked monster inside it still earns points."
+    ]}
+];
+
+const store = key => "pathlocked-v01-" + key;
+const cardsEl = document.getElementById("cards");
+
+TASKS.forEach(task => {
+  const state = JSON.parse(localStorage.getItem(store(task.id)) || "{}");
+  const card = document.createElement("div");
+  card.className = "card";
+  card.innerHTML =
+    "<h3><span class='id'>" + task.id + "</span>" + task.title + "</h3>" +
+    "<div class='label'>How to reach it</div><ol class='steps'>" +
+    task.steps.map(s => "<li>" + s + "</li>").join("") + "</ol>" +
+    "<div class='label'>What to check (pass = all true)</div><ul class='checks'>" +
+    task.checks.map(c => "<li>" + c + "</li>").join("") + "</ul>" +
+    "<div class='controls'>" +
+    "<button class='toggle pass'>&#10003; Verified &amp; complete</button>" +
+    "<button class='toggle fail'>&#10007; Not working</button>" +
+    "</div>" +
+    "<textarea placeholder='If not working: what did you see?'></textarea>";
+  cardsEl.appendChild(card);
+
+  const passBtn = card.querySelector(".pass");
+  const failBtn = card.querySelector(".fail");
+  const commentEl = card.querySelector("textarea");
+  commentEl.value = state.comment || "";
+  const render = () => {
+    passBtn.classList.toggle("active", state.status === "pass");
+    failBtn.classList.toggle("active", state.status === "fail");
+  };
+  const save = () => localStorage.setItem(store(task.id), JSON.stringify(state));
+  passBtn.onclick = () => { state.status = state.status === "pass" ? null : "pass"; save(); render(); };
+  failBtn.onclick = () => { state.status = state.status === "fail" ? null : "fail"; save(); render(); };
+  commentEl.oninput = () => { state.comment = commentEl.value; save(); };
+  render();
+});
+
+document.getElementById("copyBtn").onclick = () => {
+  const lines = ["Pathlocked v0.1 test results (worktree init-cepqd):"];
+  TASKS.forEach(task => {
+    const state = JSON.parse(localStorage.getItem(store(task.id)) || "{}");
+    const mark = state.status === "pass" ? "VERIFIED" : state.status === "fail" ? "NOT WORKING" : "NOT TESTED";
+    lines.push("- " + task.id + " " + task.title + ": " + mark +
+      (state.comment ? " — " + state.comment : ""));
+  });
+  navigator.clipboard.writeText(lines.join("\n")).then(() => {
+    const btn = document.getElementById("copyBtn");
+    btn.textContent = "Copied!";
+    setTimeout(() => btn.textContent = "Copy for Claude", 1500);
+  });
+};
+</script>

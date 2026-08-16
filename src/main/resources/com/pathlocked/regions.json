@@ -1,0 +1,106 @@
+{
+  "comment": "F2P surface map squares (64x64 tiles). id = (rx << 8) | ry, computed at load. Grid adjacency is derived from rx/ry; 'links' adds non-grid connections (boats, tunnels). Coordinates and names are best-effort and flagged for playtest verification.",
+  "regions": [
+    { "rx": 46, "ry": 48, "name": "Mudskipper Point", "tier": 2, "notes": "Ice dungeon entrance" },
+    { "rx": 46, "ry": 49, "name": "Thurgo's Peninsula", "tier": 2 },
+    { "rx": 47, "ry": 49, "name": "Port Sarim South", "tier": 2 },
+    { "rx": 48, "ry": 49, "name": "Wizards' Tower", "tier": 1 },
+    { "rx": 49, "ry": 49, "name": "Lumbridge Swamp West", "tier": 1 },
+    { "rx": 50, "ry": 49, "name": "Lumbridge Swamp", "tier": 1 },
+    { "rx": 51, "ry": 49, "name": "Al Kharid", "tier": 1 },
+
+    { "rx": 44, "ry": 49, "name": "Karamja Volcano", "tier": 3 },
+    { "rx": 45, "ry": 49, "name": "Musa Point", "tier": 2 },
+    { "rx": 44, "ry": 50, "name": "Crandor", "tier": 4, "notes": "Dragon Slayer island" },
+    { "rx": 44, "ry": 52, "name": "Entrana", "tier": 2, "notes": "No weapons or armour" },
+    { "rx": 40, "ry": 44, "name": "Corsair Cove", "tier": 2 },
+
+    { "rx": 45, "ry": 50, "name": "Melzar's Maze", "tier": 3 },
+    { "rx": 46, "ry": 50, "name": "Rimmington", "tier": 2 },
+    { "rx": 47, "ry": 50, "name": "Port Sarim", "tier": 2 },
+    { "rx": 48, "ry": 50, "name": "Draynor Village", "tier": 1 },
+    { "rx": 49, "ry": 50, "name": "Lumbridge Farms", "tier": 1 },
+    { "rx": 50, "ry": 50, "name": "Lumbridge", "tier": 1 },
+    { "rx": 51, "ry": 50, "name": "Al Kharid North", "tier": 1 },
+    { "rx": 52, "ry": 50, "name": "Emir's Arena", "tier": 3 },
+
+    { "rx": 45, "ry": 51, "name": "Crafting Guild Coast", "tier": 3 },
+    { "rx": 46, "ry": 51, "name": "Falador South", "tier": 2 },
+    { "rx": 47, "ry": 51, "name": "Falador Farms", "tier": 2 },
+    { "rx": 48, "ry": 51, "name": "Draynor North", "tier": 2 },
+    { "rx": 49, "ry": 51, "name": "Mill Lane", "tier": 1 },
+    { "rx": 50, "ry": 51, "name": "Southern Varrock Plains", "tier": 2 },
+    { "rx": 51, "ry": 51, "name": "Al Kharid Mine", "tier": 2 },
+
+    { "rx": 45, "ry": 52, "name": "Falador West", "tier": 2 },
+    { "rx": 46, "ry": 52, "name": "Falador", "tier": 1 },
+    { "rx": 47, "ry": 52, "name": "Falador East", "tier": 2 },
+    { "rx": 48, "ry": 52, "name": "Draynor Manor", "tier": 3 },
+    { "rx": 49, "ry": 52, "name": "Champions' Guild", "tier": 2 },
+    { "rx": 50, "ry": 52, "name": "Varrock South Gate", "tier": 1 },
+    { "rx": 51, "ry": 52, "name": "South-east Varrock Mine", "tier": 2 },
+
+    { "rx": 46, "ry": 53, "name": "North Falador Farms", "tier": 2 },
+    { "rx": 47, "ry": 53, "name": "Dwarven Mine", "tier": 2 },
+    { "rx": 48, "ry": 53, "name": "Barbarian Village", "tier": 2 },
+    { "rx": 49, "ry": 53, "name": "Varrock West", "tier": 1 },
+    { "rx": 50, "ry": 53, "name": "Varrock", "tier": 1 },
+    { "rx": 51, "ry": 53, "name": "Varrock East", "tier": 2 },
+
+    { "rx": 46, "ry": 54, "name": "Goblin Village", "tier": 2 },
+    { "rx": 47, "ry": 54, "name": "Ice Mountain & Monastery", "tier": 2 },
+    { "rx": 48, "ry": 54, "name": "Edgeville", "tier": 2 },
+    { "rx": 49, "ry": 54, "name": "Grand Exchange", "tier": 1 },
+    { "rx": 50, "ry": 54, "name": "Varrock Palace", "tier": 1 },
+    { "rx": 51, "ry": 54, "name": "Lumber Yard", "tier": 2 },
+
+    { "rx": 46, "ry": 55, "name": "Wilderness 1-8 West", "tier": 3 },
+    { "rx": 47, "ry": 55, "name": "Wilderness 1-8 Mid-West", "tier": 3 },
+    { "rx": 48, "ry": 55, "name": "Wilderness 1-8 Edgeville", "tier": 3 },
+    { "rx": 49, "ry": 55, "name": "Wilderness 1-8 Center", "tier": 3 },
+    { "rx": 50, "ry": 55, "name": "Wilderness 1-8 East", "tier": 3 },
+    { "rx": 51, "ry": 55, "name": "Wilderness 1-8 Far East", "tier": 3 },
+
+    { "rx": 46, "ry": 56, "name": "Wilderness 9-16 West", "tier": 3 },
+    { "rx": 47, "ry": 56, "name": "Wilderness 9-16 Mid-West", "tier": 3, "notes": "Dark Warriors' Fortress" },
+    { "rx": 48, "ry": 56, "name": "Wilderness 9-16 Edgeville", "tier": 3, "notes": "Ferox Enclave approach" },
+    { "rx": 49, "ry": 56, "name": "Wilderness 9-16 Center", "tier": 3 },
+    { "rx": 50, "ry": 56, "name": "Wilderness 9-16 East", "tier": 3, "notes": "Chaos Temple" },
+    { "rx": 51, "ry": 56, "name": "Wilderness 9-16 Far East", "tier": 3 },
+
+    { "rx": 46, "ry": 57, "name": "Wilderness 17-24 West", "tier": 4 },
+    { "rx": 47, "ry": 57, "name": "Wilderness 17-24 Mid-West", "tier": 4, "notes": "Bandit Camp" },
+    { "rx": 48, "ry": 57, "name": "Wilderness 17-24 Edgeville", "tier": 4 },
+    { "rx": 49, "ry": 57, "name": "Wilderness 17-24 Center", "tier": 4 },
+    { "rx": 50, "ry": 57, "name": "Wilderness 17-24 East", "tier": 4 },
+    { "rx": 51, "ry": 57, "name": "Wilderness 17-24 Far East", "tier": 4 },
+
+    { "rx": 46, "ry": 58, "name": "Wilderness 25-32 West", "tier": 4 },
+    { "rx": 47, "ry": 58, "name": "Wilderness 25-32 Mid-West", "tier": 4 },
+    { "rx": 48, "ry": 58, "name": "Wilderness 25-32 Edgeville", "tier": 4 },
+    { "rx": 49, "ry": 58, "name": "Wilderness 25-32 Center", "tier": 4 },
+    { "rx": 50, "ry": 58, "name": "Wilderness 25-32 East", "tier": 4 },
+    { "rx": 51, "ry": 58, "name": "Wilderness 25-32 Far East", "tier": 4 },
+
+    { "rx": 46, "ry": 59, "name": "Wilderness 33-40 West", "tier": 5 },
+    { "rx": 47, "ry": 59, "name": "Wilderness 33-40 Mid-West", "tier": 5 },
+    { "rx": 48, "ry": 59, "name": "Wilderness 33-40 Edgeville", "tier": 5 },
+    { "rx": 49, "ry": 59, "name": "Wilderness 33-40 Center", "tier": 5 },
+    { "rx": 50, "ry": 59, "name": "Wilderness 33-40 East", "tier": 5 },
+    { "rx": 51, "ry": 59, "name": "Wilderness 33-40 Far East", "tier": 5 },
+
+    { "rx": 46, "ry": 60, "name": "Wilderness 41-48 West", "tier": 5 },
+    { "rx": 47, "ry": 60, "name": "Wilderness 41-48 Mid-West", "tier": 5, "notes": "Lava Maze, KBD lair entrance" },
+    { "rx": 48, "ry": 60, "name": "Wilderness 41-48 Edgeville", "tier": 5 },
+    { "rx": 49, "ry": 60, "name": "Wilderness 41-48 Center", "tier": 5 },
+    { "rx": 50, "ry": 60, "name": "Wilderness 41-48 East", "tier": 5, "notes": "Demonic Ruins" },
+    { "rx": 51, "ry": 60, "name": "Wilderness 41-48 Far East", "tier": 5 },
+
+    { "rx": 48, "ry": 61, "name": "Wilderness 49-56 Mage Arena", "tier": 5 }
+  ],
+  "links": [
+    ["Port Sarim", "Musa Point"],
+    ["Port Sarim", "Entrana"],
+    ["Rimmington", "Corsair Cove"]
+  ]
+}
