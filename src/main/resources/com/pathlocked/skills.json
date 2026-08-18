@@ -1,0 +1,20 @@
+{
+  "comment": "The draftable skill pool (F2P scope, matching v0.1's region/monster scope). Names must match RuneLite's Skill.getName() so the plugin can map XP events onto locks.",
+  "skills": [
+    "Attack",
+    "Strength",
+    "Defence",
+    "Ranged",
+    "Prayer",
+    "Magic",
+    "Runecraft",
+    "Hitpoints",
+    "Crafting",
+    "Mining",
+    "Smithing",
+    "Fishing",
+    "Cooking",
+    "Firemaking",
+    "Woodcutting"
+  ]
+}

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>v02-core · Pathlocked v0.2 plan</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --bg: #16181d; --panel: #1e2128; --panel2: #23272f; --border: #2e333d;
+    --text: #d6d9de; --muted: #8b919c; --accent: #c9a35c; --green: #7fa66a;
+    --red: #b06a5f; --blue: #6d8fb5;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.55 -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 40px 28px 80px; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h1 .v { color: var(--accent); }
+  .sub { color: var(--muted); margin-bottom: 32px; }
+  h2 { font-size: 18px; margin: 40px 0 12px; padding-bottom: 6px;
+    border-bottom: 1px solid var(--border); }
+  h2 .n { color: var(--accent); font-weight: 600; margin-right: 8px; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 14px; }
+  th, td { text-align: left; padding: 8px 12px; border: 1px solid var(--border);
+    vertical-align: top; }
+  th { background: var(--panel2); font-weight: 600; }
+  td { background: var(--panel); }
+  code { background: var(--panel2); border: 1px solid var(--border);
+    border-radius: 4px; padding: 1px 5px; font-size: 13px;
+    font-family: "SF Mono", Menlo, monospace; }
+  .decision { background: var(--panel); border: 1px solid var(--border);
+    border-left: 3px solid var(--accent); border-radius: 6px;
+    padding: 14px 18px; margin: 14px 0; }
+  .decision .q { font-weight: 600; margin-bottom: 6px; }
+  .decision .q .num { color: var(--accent); margin-right: 6px; }
+  .decision .a { color: var(--text); }
+  .decision .why { color: var(--muted); font-size: 13.5px; margin-top: 6px; }
+  .stage { display: flex; gap: 14px; margin: 12px 0; }
+  .stage .tag { flex: 0 0 84px; color: var(--accent); font-weight: 600;
+    font-size: 13px; padding-top: 2px; }
+  ul { margin: 8px 0; padding-left: 22px; }
+  li { margin: 4px 0; }
+  .muted { color: var(--muted); }
+  .ok { color: var(--green); } .warn { color: var(--red); }
+  .pill { display: inline-block; background: var(--panel2);
+    border: 1px solid var(--border); border-radius: 10px; padding: 0 8px;
+    font-size: 12.5px; color: var(--muted); margin-left: 6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Pathlocked <span class="v">v0.2</span> — item tags, skill locks, unlock tree</h1>
+<div class="sub">Branch <code>emdash/v02-core</code> off latest main (post PR #5) ·
+plan per <code>docs/choice-rpg-design.html</code> §8 v0.2 scope:
+<em>“Item tags + skill unlocks + void-XP tracking; unlock-tree side panel.”</em></div>
+
+<h2><span class="n">A</span>Decisions (veto by number, otherwise these ship)</h2>
+
+<div class="decision">
+  <div class="q"><span class="num">1.</span>Starter skills: Attack, Strength, Hitpoints unlocked — plus an instant free skill pick</div>
+  <div class="a">All other F2P skills start locked. New (and migrated v0.1) profiles get a banked
+  <strong>skill draft immediately</strong>, so your first act in v0.2 is choosing your gathering/identity skill.</div>
+  <div class="why">Design doc: “start with 3 combat-ish basics + 1 free pick.” Without the instant pick,
+  a fresh account has zero XP-point sources (combat XP never earns points), which would break the early loop.</div>
+</div>
+
+<div class="decision">
+  <div class="q"><span class="num">2.</span>Draft rotation becomes region → monster → item; every 10th choice is a skill keystone</div>
+  <div class="a">New <code>DraftCategory.ITEM</code> and <code>DraftCategory.SKILL</code>. Normal drafts rotate
+  the three content categories; every <strong>5th</strong> stays the free pick (now sampling all four
+  categories, capped at 6 cards); every <strong>10th</strong> is a <strong>skill keystone</strong> — 3 locked
+  skills, pick 1, reroll as usual. When skills run out, keystones fall back to a free pick.</div>
+  <div class="why">Design doc: “skills as keystones … the build-defining picks.” Cadence is
+  softlock-guarded: <code>DraftSimulationTest</code> extends to all four categories and must still prove
+  500 seeds reach 100% completion.</div>
+</div>
+
+<div class="decision">
+  <div class="q"><span class="num">3.</span>Item draft pool: ~17 umbrella tags; starters are Bronze tier, Basic food, Tools</div>
+  <div class="a">Curate Lane C’s 59 generated tags down to 15 umbrellas: the 7 metal tiers
+  (bronze→rune, whole tiers — not per-slot), Basic food, Basic potions (dose-qualified names), Basic
+  runes, Normal logs, Ores, Metal bars, Tools, Ranged weapons. Per-slot subtags (e.g. “Iron helm”),
+  the 2-item “Seeds” tag, and “Ammunition” are dropped as draft noise — arrows gate through their
+  metal-tier tags, and no item repeats across a tiered and an untiered tag (validate() enforces this,
+  or a broad tag would bypass the tier chain). Higher metal tiers only enter the pool once the
+  previous tier is owned (frontier rule, mirrors region adjacency).</div>
+  <div class="why">A 1-of-3 draft over per-slot tags is 49 near-identical picks; whole tiers make each
+  card a real decision. Starter tags keep the first hour playable with any starting skill choice.</div>
+</div>
+
+<div class="decision">
+  <div class="q"><span class="num">4.</span>Enforcement scope: menu locks + inventory greying now; GE/shop and training-verb blocking deferred to v0.3</div>
+  <div class="a">Locked-tag items: deprioritize (and optionally hard-block, same two config toggles as
+  monsters) <em>Wield / Wear / Equip / Eat / Drink</em>; grey lock overlay on inventory + bank icons.
+  Locked skills: <strong>void XP</strong> — earns 0 points, accumulates a per-skill counter shown in the
+  panel, one chat warning per skill per session. No verb blocking yet.</div>
+  <div class="why">Design doc rates item/menu locking “proven” but verb-blocking only “partial”; keeping
+  v0.2 to the proven surface keeps the branch reviewable. Void XP is the honor-mode mechanism the doc
+  prescribes for skills.</div>
+</div>
+
+<h2><span class="n">B</span>Implementation stages <span class="pill">single branch, sequential</span></h2>
+
+<div class="stage"><div class="tag">1 · Data</div><div>
+  Curate <code>item_tags.json</code> into <code>src/main/resources/com/pathlocked/</code> (umbrella tags,
+  per decision 3); add <code>skills</code> + <code>starterTags</code> to <code>starter_kit.json</code>;
+  extend <code>ContentDataTest</code> (unique names, category enum, tier 1–7/null, non-empty item lists,
+  starter references resolve).
+</div></div>
+
+<div class="stage"><div class="tag">2 · Core</div><div>
+  <code>ItemTagDef</code> + loading/lookup in <code>ContentRepository</code> (case-insensitive item-name
+  index, mirrors monsters); <code>ProfileState</code> v2 — <code>unlockedTags</code>,
+  <code>unlockedSkills</code>, <code>voidXpBySkill</code>, migration that grants starters and banks the
+  instant skill pick; <code>DraftService</code> — two new categories, rotation/keystone/free-pick logic,
+  tier-frontier for metal tags; extend <code>DraftSimulationTest</code> (500 seeds → 100% across all
+  four categories).
+</div></div>
+
+<div class="stage"><div class="tag">3 · Enforce</div><div>
+  <code>ItemLockEnforcement</code> via <code>MenuEntryAdded</code> (deprioritize/consume, config-gated);
+  inventory/bank grey overlay (<code>WidgetItemOverlay</code>); <code>PointsService</code> gains
+  skill-gating + void-XP accumulation; chat warnings wired in the plugin class.
+</div></div>
+
+<div class="stage"><div class="tag">4 · UI</div><div>
+  Draft cards render ITEM/SKILL categories (label + tier pips reuse);
+  panel adds tag/skill counters + void-XP line; new <strong>unlock-tree</strong> panel tab —
+  collapsible category sections listing every unlockable with locked/unlocked state.
+</div></div>
+
+<div class="stage"><div class="tag">5 · Verify</div><div>
+  Gradle build + full tests → <code>/code-review</code> self-pass → Codex
+  <strong>ensemble round (3 parallel passes)</strong> — this will be a bug-dense branch — fix the union,
+  re-run to clean → playtest-handoff HTML (T-checklist like v0.1) → PR to main after your playtest.
+</div></div>
+
+<h2><span class="n">C</span>Out of scope (v0.3+, unchanged from design doc)</h2>
+<ul class="muted">
+  <li>GE/shop-buy blocking, training-verb menu blocking, item quarantine state</li>
+  <li>Quest bundles, curses, members content, seeded-run UX polish</li>
+  <li>Pokemon-card center-screen draft art pass (parked task #7 — overlay exists, art later)</li>
+</ul>
+
+<div class="muted" style="margin-top:36px">Profile note: existing v0.1 profiles migrate in place —
+starters granted, nothing lost; your test profile will get the instant skill draft at next login.</div>
+
+</div>
+</body>
+</html>

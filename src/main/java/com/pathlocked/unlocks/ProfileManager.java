@@ -3,10 +3,12 @@ package com.pathlocked.unlocks;
 import com.google.gson.Gson;
 import com.pathlocked.content.ContentRepository;
 import com.pathlocked.content.RegionDef;
+import com.pathlocked.draft.DraftCategory;
 import com.pathlocked.points.ThresholdCurve;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,6 +33,15 @@ public class ProfileManager
 	private boolean createdNewProfile;
 
 	/**
+	 * True when the last loadOrCreate upgraded a v0.1 profile. The caller must
+	 * treat the profile as dirty: if the migration save here failed, only the
+	 * caller's retry loop stands between a logout and the migration re-running
+	 * (and re-banking a threshold) on the next login.
+	 */
+	@Getter
+	private boolean migratedProfile;
+
+	/**
 	 * @param gson the client's injected Gson; a pretty-printing variant is derived
 	 * from it rather than instantiating Gson directly (Plugin Hub rule)
 	 */
@@ -43,6 +54,7 @@ public class ProfileManager
 	public ProfileState loadOrCreate(long accountHash, ContentRepository content, long seed)
 	{
 		createdNewProfile = false;
+		migratedProfile = false;
 		File file = profileFile(accountHash);
 		if (file.exists())
 		{
@@ -52,7 +64,13 @@ public class ProfileManager
 				ProfileState state = gson.fromJson(json, ProfileState.class);
 				if (state != null && state.unlockedRegions != null && !state.unlockedRegions.isEmpty())
 				{
-					return normalize(state);
+					ProfileState normalized = normalize(state);
+					if (migrateToV2(normalized, content))
+					{
+						migratedProfile = true;
+						save(accountHash, normalized);
+					}
+					return normalized;
 				}
 				log.warn("Profile file {} parsed to an empty state; recreating", file);
 			}
@@ -79,16 +97,77 @@ public class ProfileManager
 		{
 			state.unlockedMonsters = new LinkedHashSet<>();
 		}
+		if (state.unlockedTags == null)
+		{
+			state.unlockedTags = new LinkedHashSet<>();
+		}
+		if (state.unlockedSkills == null)
+		{
+			state.unlockedSkills = new LinkedHashSet<>();
+		}
+		if (state.voidXpBySkill == null)
+		{
+			state.voidXpBySkill = new LinkedHashMap<>();
+		}
 		if (state.history == null)
 		{
 			state.history = new ArrayList<>();
 		}
 		if (state.pendingDraft != null
-			&& (state.pendingDraft.offers == null || state.pendingDraft.offers.isEmpty()))
+			&& (state.pendingDraft.offers == null || state.pendingDraft.offers.isEmpty()
+				|| state.pendingDraft.offers.stream()
+					.anyMatch(offer -> offer == null || offer.getCategory() == null)))
 		{
+			// Empty or malformed offers (null category would NPE the pick
+			// switch): drop the draft; a fresh one rolls on the next tick.
 			state.pendingDraft = null;
 		}
+		if (state.pendingDraft != null && state.pendingDraft.category == null)
+		{
+			// Pre-category profile: infer so a reroll keeps the same kind of
+			// draft. Mixed offers can only have come from a free pick.
+			DraftCategory first = state.pendingDraft.offers.get(0).getCategory();
+			boolean uniform = state.pendingDraft.offers.stream()
+				.allMatch(offer -> offer.getCategory() == first);
+			state.pendingDraft.category = uniform ? first : DraftCategory.FREE;
+		}
 		return state;
+	}
+
+	/**
+	 * Upgrades a v0.1 profile (no skill/tag unlocks yet) in place: grants the
+	 * starter skills and tags, and banks one extra threshold with a forced
+	 * SKILL draft so the mid-run account picks its identity skill immediately
+	 * instead of waiting for the next keystone.
+	 *
+	 * @return true when a migration happened and the profile should be re-saved
+	 */
+	private static boolean migrateToV2(ProfileState state, ContentRepository content)
+	{
+		if (!state.unlockedSkills.isEmpty())
+		{
+			return false;
+		}
+		grantStarterSkillsAndTags(state, content);
+		// Bank the threshold the forced skill draft will spend. With a pending
+		// v0.1 draft still open, that draft consumes cost(choiceIndex) first,
+		// so the skill draft's own cost is the NEXT threshold.
+		int skillDraftIndex = state.pendingDraft != null ? state.choiceIndex + 1 : state.choiceIndex;
+		state.totalPoints += ThresholdCurve.cost(skillDraftIndex);
+		state.nextCategoryOverride = DraftCategory.SKILL;
+		return true;
+	}
+
+	private static void grantStarterSkillsAndTags(ProfileState state, ContentRepository content)
+	{
+		for (String skillName : content.getStarterSkills())
+		{
+			state.unlockedSkills.add(skillName.toLowerCase());
+		}
+		for (String tagName : content.getStarterTags())
+		{
+			state.unlockedTags.add(tagName.toLowerCase());
+		}
 	}
 
 	private ProfileState createProfile(ContentRepository content, long seed)
@@ -110,6 +189,10 @@ public class ProfileManager
 		{
 			state.unlockedMonsters.add(monsterName.toLowerCase());
 		}
+		grantStarterSkillsAndTags(state, content);
+		// The banked first threshold plus a forced SKILL category makes the very
+		// first draft the identity-skill pick — the opening act of a run.
+		state.nextCategoryOverride = DraftCategory.SKILL;
 		return state;
 	}
 

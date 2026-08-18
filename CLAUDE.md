@@ -11,19 +11,32 @@ from the latest state. Keep it short — replace stale lines, don't append.**
 
 ## Current Status (updated 2026-08-16)
 
-- **Stage-1 lanes done.** Lanes A (card overlay), B (region curation), C (wiki
-  scraper) merged to `main` (PRs #1–#3). Lane D (hub-submission prep: README,
-  icon, runelite-plugin.properties, checklist) lives on
-  `emdash/hub-submission-qx2ti` — hub PR itself deferred to v0.2.
-- README screenshot table is commented out until the four captures exist in
-  `docs/images/` (shot list is in the README); Håkon owns the screenshots.
-- Reviewed: /code-review self-pass + multiple Codex rounds across all lanes.
-- Accepted decisions (do not re-litigate): own-hitsplat kill attribution
-  (15s window); dungeons inherit surface square via ry−100 rule; new profiles
-  bank the first threshold (instant draft at login); unlisted NPCs and
-  non-UNLOCKED ground earn no XP points, kills reject only LOCKED (trespass).
-- Next up (parked in ~/claude-projects/coding-agent-tasks.md): balancing pass,
-  then v0.2 scope (item tags + skill locks), screenshots + hub submission.
+- **v0.2 complete: playtested T1-T8 all verified (2026-08-18), merged to
+  main.** Item-tag + skill unlocks, void XP, keystone drafts, unlock-tree tab,
+  center-screen draft cards (Lane A overlay wired in during playtest round 1).
+  Build green, 42/42 tests; /code-review self-pass + 3 Codex ensemble rounds +
+  wiring pass, all clean at the end.
+- Playtest prep rule (standing): pre-bank the test profile
+  (~/.runelite/pathlocked/profile-*.json, client closed) before every handoff
+  so no test needs grinding. Test account is a hardcore ironman - no shop/GE
+  assumptions.
+- v0.1 + Stage-1 lanes (card overlay, region curation, wiki scraper, hub prep,
+  README screenshots) all merged to `main` (PRs #1-#5). Hub-submission PR to
+  runelite/plugin-hub still deferred until v0.2 ships.
+- v0.2 gameplay decisions (approved 2026-08-16, do not re-litigate): starters
+  Attack/Str/HP + instant forced skill draft (also on migration, which banks
+  one threshold); rotation region->monster->item, 5th free (<=6 mixed cards),
+  10th skill keystone; 16 umbrella item tags with metal-tier chain (t needs
+  t-1), starter tags Bronze tier/Basic food/Tools; enforcement = menu
+  deprioritize+hard-block on Wield/Wear/Equip/Eat/Drink + inventory/bank/equip
+  greying; locked-skill XP is void (tracked per skill, warned once/session);
+  GE/shop + training-verb blocking deferred to v0.3.
+- v0.1 accepted decisions (do not re-litigate): own-hitsplat kill attribution
+  (15s window); dungeons inherit surface square via explicit mapping then
+  ry-100 rule; unlisted NPCs/items and non-UNLOCKED ground earn no XP points,
+  kills reject only LOCKED (trespass).
+- Next up: finish v0.2 review rounds, playtest handoff, balancing pass
+  (parked), then hub submission.
 
 ## Key commands
 

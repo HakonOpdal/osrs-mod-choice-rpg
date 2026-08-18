@@ -26,8 +26,43 @@ public class ContentDataTest
 		ContentRepository content = ContentRepository.load(new Gson());
 		assertTrue("Expected at least 70 regions", content.getRegions().size() >= 70);
 		assertTrue("Expected at least 30 monsters", content.getMonsters().size() >= 30);
+		assertTrue("Expected at least 15 item tags", content.getItemTags().size() >= 15);
+		assertTrue("Expected at least 10 skills", content.getSkillNames().size() >= 10);
 		assertTrue("Starter kit needs regions", !content.getStarterRegions().isEmpty());
 		assertTrue("Starter kit needs monsters", !content.getStarterMonsters().isEmpty());
+		assertTrue("Starter kit needs skills", !content.getStarterSkills().isEmpty());
+		assertTrue("Starter kit needs item tags", !content.getStarterTags().isEmpty());
+	}
+
+	@Test
+	public void itemLookupIsCaseInsensitive()
+	{
+		ContentRepository content = ContentRepository.load(new Gson());
+		assertTrue("Bronze dagger should be tagged",
+			!content.tagsForItem("BRONZE DAGGER").isEmpty());
+		assertTrue("Unlisted items are uncharted",
+			content.tagsForItem("Twisted bow").isEmpty());
+		// Metal tools gate through their tier tag ONLY — validate() rejects
+		// tiered items that also sit in an untiered tag (tier-chain bypass).
+		assertEquals(1, content.tagsForItem("Rune pickaxe").size());
+		assertEquals(Integer.valueOf(7),
+			content.tagsForItem("Rune pickaxe").get(0).getTier());
+	}
+
+	@Test
+	public void skillPoolMatchesRuneliteSkillNames()
+	{
+		ContentRepository content = ContentRepository.load(new Gson());
+		java.util.Set<String> runeliteNames = new java.util.HashSet<>();
+		for (net.runelite.api.Skill skill : net.runelite.api.Skill.values())
+		{
+			runeliteNames.add(skill.getName());
+		}
+		for (String name : content.getSkillNames())
+		{
+			assertTrue("skills.json name must match a RuneLite Skill.getName(): " + name,
+				runeliteNames.contains(name));
+		}
 	}
 
 	@Test

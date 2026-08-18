@@ -33,27 +33,53 @@ public class ContentRepository
 		List<MonsterDef> monsters;
 	}
 
+	private static class ItemTagsFile
+	{
+		List<ItemTagDef> tags;
+	}
+
+	private static class SkillsFile
+	{
+		List<String> skills;
+	}
+
 	private static class StarterKitFile
 	{
 		List<String> regions;
 		List<String> monsters;
+		List<String> skills;
+		List<String> tags;
 	}
 
 	public static final String HOME_REGION = "Lumbridge";
+	public static final Set<String> TAG_CATEGORIES =
+		Set.of("equipment", "food", "resource", "rune", "tool", "ammo");
 
 	@Getter
 	private final List<RegionDef> regions;
 	@Getter
 	private final List<MonsterDef> monsters;
 	@Getter
+	private final List<ItemTagDef> itemTags;
+	@Getter
+	private final List<String> skillNames;
+	@Getter
 	private final List<String> starterRegions;
 	@Getter
 	private final List<String> starterMonsters;
+	@Getter
+	private final List<String> starterSkills;
+	@Getter
+	private final List<String> starterTags;
 
 	private final List<List<String>> links;
 	private final Map<Integer, RegionDef> regionsById = new LinkedHashMap<>();
 	private final Map<String, RegionDef> regionsByName = new LinkedHashMap<>();
 	private final Map<String, MonsterDef> monstersByKey = new LinkedHashMap<>();
+	private final Map<String, ItemTagDef> tagsByKey = new LinkedHashMap<>();
+	/** lowercase item name -> every tag that lists it (an item may sit in several tags). */
+	private final Map<String, List<ItemTagDef>> tagsByItemName = new HashMap<>();
+	private final Set<String> listedSkills = new HashSet<>();
 	private final Map<Integer, Set<Integer>> adjacency = new HashMap<>();
 	/** underground map-square id -> owning surface region id (explicit mappings only). */
 	private final Map<Integer, Integer> undergroundOwner = new HashMap<>();
@@ -65,19 +91,28 @@ public class ContentRepository
 	{
 		RegionsFile regionsFile = readResource(gson, "regions.json", RegionsFile.class);
 		MonstersFile monstersFile = readResource(gson, "monsters.json", MonstersFile.class);
+		ItemTagsFile itemTagsFile = readResource(gson, "item_tags.json", ItemTagsFile.class);
+		SkillsFile skillsFile = readResource(gson, "skills.json", SkillsFile.class);
 		StarterKitFile starterFile = readResource(gson, "starter_kit.json", StarterKitFile.class);
 		return new ContentRepository(regionsFile.regions, regionsFile.links,
-			monstersFile.monsters, starterFile.regions, starterFile.monsters);
+			monstersFile.monsters, itemTagsFile.tags, skillsFile.skills,
+			starterFile.regions, starterFile.monsters, starterFile.skills, starterFile.tags);
 	}
 
 	ContentRepository(List<RegionDef> regions, List<List<String>> links, List<MonsterDef> monsters,
-		List<String> starterRegions, List<String> starterMonsters)
+		List<ItemTagDef> itemTags, List<String> skillNames,
+		List<String> starterRegions, List<String> starterMonsters,
+		List<String> starterSkills, List<String> starterTags)
 	{
 		this.regions = regions;
 		this.links = links == null ? new ArrayList<>() : links;
 		this.monsters = monsters;
+		this.itemTags = itemTags == null ? new ArrayList<>() : itemTags;
+		this.skillNames = skillNames == null ? new ArrayList<>() : skillNames;
 		this.starterRegions = starterRegions;
 		this.starterMonsters = starterMonsters;
+		this.starterSkills = starterSkills == null ? new ArrayList<>() : starterSkills;
+		this.starterTags = starterTags == null ? new ArrayList<>() : starterTags;
 
 		for (RegionDef region : regions)
 		{
@@ -87,6 +122,27 @@ public class ContentRepository
 		for (MonsterDef monster : monsters)
 		{
 			monstersByKey.put(monster.key(), monster);
+		}
+		for (ItemTagDef tag : this.itemTags)
+		{
+			if (tag.getName() == null)
+			{
+				// Indexing must survive malformed data; validate() reports it.
+				continue;
+			}
+			tagsByKey.put(tag.key(), tag);
+			if (tag.getItemNames() == null)
+			{
+				continue;
+			}
+			for (String itemName : tag.getItemNames())
+			{
+				tagsByItemName.computeIfAbsent(itemName.toLowerCase(), key -> new ArrayList<>()).add(tag);
+			}
+		}
+		for (String skillName : this.skillNames)
+		{
+			listedSkills.add(skillName.toLowerCase());
 		}
 		buildAdjacency();
 		buildUndergroundOwners();
@@ -221,6 +277,29 @@ public class ContentRepository
 	}
 
 	/**
+	 * False for skills outside the draft pool (members skills in the F2P
+	 * scope): those are uncharted — never enforced, like unlisted NPCs/items.
+	 */
+	public boolean isListedSkill(String skillName)
+	{
+		return skillName != null && listedSkills.contains(skillName.toLowerCase());
+	}
+
+	/**
+	 * Every tag listing this item, or an empty list for unlisted items
+	 * (which are uncharted: never enforced, like unlisted NPCs).
+	 */
+	public List<ItemTagDef> tagsForItem(String itemName)
+	{
+		if (itemName == null)
+		{
+			return List.of();
+		}
+		List<ItemTagDef> tags = tagsByItemName.get(itemName.toLowerCase());
+		return tags == null ? List.of() : tags;
+	}
+
+	/**
 	 * Data sanity checks used by tests; returns a list of problems (empty = valid).
 	 */
 	public List<String> validate()
@@ -320,6 +399,83 @@ public class ContentRepository
 			}
 		}
 
+		Set<String> tagNames = new HashSet<>();
+		Set<Integer> tagTiers = new HashSet<>();
+		Set<String> tieredItems = new HashSet<>();
+		for (ItemTagDef tag : itemTags)
+		{
+			if (tag.getTier() != null && tag.getItemNames() != null)
+			{
+				for (String itemName : tag.getItemNames())
+				{
+					tieredItems.add(itemName.toLowerCase());
+				}
+			}
+		}
+		for (ItemTagDef tag : itemTags)
+		{
+			if (tag.getName() == null)
+			{
+				problems.add("Item tag with no name (category: " + tag.getCategory() + ")");
+				continue;
+			}
+			if (!tagNames.add(tag.key()))
+			{
+				problems.add("Duplicate item tag name: " + tag.getName());
+			}
+			// An untiered tag must never list an item that a tiered tag owns:
+			// "any containing tag unlocked = usable" would let the broad tag
+			// bypass the metal-tier draft chain.
+			if (tag.getTier() == null && tag.getItemNames() != null)
+			{
+				for (String itemName : tag.getItemNames())
+				{
+					if (tieredItems.contains(itemName.toLowerCase()))
+					{
+						problems.add("Item in both a tiered and untiered tag (tier-chain bypass): "
+							+ itemName + " in " + tag.getName());
+					}
+				}
+			}
+			if (tag.getCategory() == null || !TAG_CATEGORIES.contains(tag.getCategory()))
+			{
+				problems.add("Item tag category not in " + TAG_CATEGORIES + ": " + tag.getName());
+			}
+			if (tag.getTier() != null)
+			{
+				if (tag.getTier() < 1 || tag.getTier() > 7)
+				{
+					problems.add("Item tag tier out of range 1-7: " + tag.getName());
+				}
+				else
+				{
+					tagTiers.add(tag.getTier());
+				}
+			}
+			if (tag.getItemNames() == null || tag.getItemNames().isEmpty())
+			{
+				problems.add("Item tag has no items: " + tag.getName());
+			}
+		}
+		// Tiered tags form a draft chain (tier t needs t-1 unlocked), so a gap in
+		// the tier sequence would make every tier above the gap undraftable.
+		for (int tier : tagTiers)
+		{
+			if (tier > 1 && !tagTiers.contains(tier - 1))
+			{
+				problems.add("Item tag tier chain has a gap: tier " + tier + " exists but tier " + (tier - 1) + " does not");
+			}
+		}
+
+		Set<String> uniqueSkills = new HashSet<>();
+		for (String skill : skillNames)
+		{
+			if (!uniqueSkills.add(skill.toLowerCase()))
+			{
+				problems.add("Duplicate skill: " + skill);
+			}
+		}
+
 		for (String name : starterRegions)
 		{
 			if (!regionsByName.containsKey(name))
@@ -332,6 +488,20 @@ public class ContentRepository
 			if (!monstersByKey.containsKey(name.toLowerCase()))
 			{
 				problems.add("Starter kit references unknown monster: " + name);
+			}
+		}
+		for (String name : starterSkills)
+		{
+			if (!uniqueSkills.contains(name.toLowerCase()))
+			{
+				problems.add("Starter kit references unknown skill: " + name);
+			}
+		}
+		for (String name : starterTags)
+		{
+			if (!tagsByKey.containsKey(name.toLowerCase()))
+			{
+				problems.add("Starter kit references unknown item tag: " + name);
 			}
 		}
 

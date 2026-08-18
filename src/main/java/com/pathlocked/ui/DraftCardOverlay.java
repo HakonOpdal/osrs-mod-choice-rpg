@@ -63,6 +63,8 @@ public class DraftCardOverlay extends Overlay implements DraftCardPresenter
 
 	private static final Color REGION_ACCENT = new Color(104, 164, 122);
 	private static final Color MONSTER_ACCENT = new Color(198, 92, 78);
+	private static final Color ITEM_ACCENT = new Color(110, 142, 178);
+	private static final Color SKILL_ACCENT = new Color(196, 160, 82);
 
 	private final Client client;
 	private final PathlockedPanel.Actions actions;
@@ -283,8 +285,8 @@ public class DraftCardOverlay extends Overlay implements DraftCardPresenter
 
 	private static void drawCard(Graphics2D g, int x, int y, DraftOption option, Fonts fonts, boolean hovered)
 	{
-		boolean region = option.getCategory() == DraftCategory.REGION;
-		Color accent = region ? REGION_ACCENT : MONSTER_ACCENT;
+		DraftCategory category = option.getCategory();
+		Color accent = accentFor(category);
 
 		// Shadow.
 		g.setColor(SHADOW);
@@ -304,11 +306,11 @@ public class DraftCardOverlay extends Overlay implements DraftCardPresenter
 
 		g.setColor(darken(accent, 0.65f));
 		g.setFont(fonts.headerLabel);
-		drawCentered(g, region ? "REGION" : "MONSTER", x + CARD_W / 2, y + 17,
+		drawCentered(g, category.name(), x + CARD_W / 2, y + 17,
 			new Color(20, 22, 18));
 
 		// Emblem.
-		drawEmblem(g, x + CARD_W / 2, y + HEADER_H + 34, accent, region);
+		drawEmblem(g, x + CARD_W / 2, y + HEADER_H + 34, accent, category);
 
 		// Name (wrapped, up to 3 lines).
 		g.setFont(fonts.name);
@@ -344,32 +346,66 @@ public class DraftCardOverlay extends Overlay implements DraftCardPresenter
 		g.draw(body);
 	}
 
-	private static void drawEmblem(Graphics2D g, int cx, int cy, Color accent, boolean region)
+	private static Color accentFor(DraftCategory category)
+	{
+		switch (category)
+		{
+			case REGION:
+				return REGION_ACCENT;
+			case MONSTER:
+				return MONSTER_ACCENT;
+			case ITEM:
+				return ITEM_ACCENT;
+			default:
+				return SKILL_ACCENT;
+		}
+	}
+
+	private static void drawEmblem(Graphics2D g, int cx, int cy, Color accent, DraftCategory category)
 	{
 		g.setColor(darken(accent, 0.75f));
-		if (region)
+		switch (category)
 		{
-			// Compass diamond.
-			Polygon diamond = new Polygon(
-				new int[]{cx, cx + 16, cx, cx - 16},
-				new int[]{cy - 18, cy, cy + 18, cy}, 4);
-			g.fill(diamond);
-			g.setColor(brighten(accent, 0.5f));
-			g.setStroke(new BasicStroke(1.6f));
-			g.drawLine(cx, cy - 18, cx, cy + 18);
-			g.drawLine(cx - 16, cy, cx + 16, cy);
-		}
-		else
-		{
-			// Blunt fang/skull mark: circle head + tapered jaw.
-			g.fillOval(cx - 15, cy - 18, 30, 26);
-			Polygon jaw = new Polygon(
-				new int[]{cx - 9, cx + 9, cx},
-				new int[]{cy + 4, cy + 4, cy + 18}, 3);
-			g.fill(jaw);
-			g.setColor(new Color(20, 22, 18));
-			g.fillOval(cx - 8, cy - 10, 6, 7);
-			g.fillOval(cx + 2, cy - 10, 6, 7);
+			case REGION:
+				// Compass diamond.
+				Polygon diamond = new Polygon(
+					new int[]{cx, cx + 16, cx, cx - 16},
+					new int[]{cy - 18, cy, cy + 18, cy}, 4);
+				g.fill(diamond);
+				g.setColor(brighten(accent, 0.5f));
+				g.setStroke(new BasicStroke(1.6f));
+				g.drawLine(cx, cy - 18, cx, cy + 18);
+				g.drawLine(cx - 16, cy, cx + 16, cy);
+				break;
+			case MONSTER:
+				// Blunt fang/skull mark: circle head + tapered jaw.
+				g.fillOval(cx - 15, cy - 18, 30, 26);
+				Polygon jaw = new Polygon(
+					new int[]{cx - 9, cx + 9, cx},
+					new int[]{cy + 4, cy + 4, cy + 18}, 3);
+				g.fill(jaw);
+				g.setColor(new Color(20, 22, 18));
+				g.fillOval(cx - 8, cy - 10, 6, 7);
+				g.fillOval(cx + 2, cy - 10, 6, 7);
+				break;
+			case ITEM:
+				// Satchel: body with a flap line and a clasp dot.
+				g.fill(new RoundRectangle2D.Float(cx - 15, cy - 12, 30, 26, 8, 8));
+				g.setColor(brighten(accent, 0.5f));
+				g.setStroke(new BasicStroke(1.6f));
+				g.drawLine(cx - 15, cy - 2, cx + 15, cy - 2);
+				g.fillOval(cx - 3, cy + 1, 6, 6);
+				break;
+			default:
+				// Skill keystone: four-point star.
+				Polygon star = new Polygon(
+					new int[]{cx, cx + 5, cx + 17, cx + 5, cx, cx - 5, cx - 17, cx - 5},
+					new int[]{cy - 18, cy - 5, cy, cy + 5, cy + 18, cy + 5, cy, cy - 5}, 8);
+				g.fill(star);
+				g.setColor(brighten(accent, 0.5f));
+				g.setStroke(new BasicStroke(1.4f));
+				g.draw(star);
+				break;
 		}
 	}
 

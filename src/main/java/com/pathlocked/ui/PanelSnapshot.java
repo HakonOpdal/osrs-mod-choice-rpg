@@ -23,10 +23,16 @@ public class PanelSnapshot
 	 */
 	List<DraftOption> offers;
 	int rerollsLeft;
-	int regionsUnlocked;
-	int regionsTotal;
-	int monstersUnlocked;
-	int monstersTotal;
+	/**
+	 * Total XP gained in locked skills — void XP, earns no points.
+	 */
+	long voidXp;
+	/**
+	 * Every unlockable with its owned state — the single source for both the
+	 * unlock-tree tab and the per-section counters on the Run tab. Null when
+	 * logged out.
+	 */
+	List<UnlockEntry> unlockEntries;
 	List<String> recentHistory;
 	long illegalKills;
 	long violationTicks;
