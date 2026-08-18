@@ -13,6 +13,7 @@ import com.pathlocked.enforcement.RegionLockOverlay;
 import com.pathlocked.enforcement.RegionStatus;
 import com.pathlocked.points.PointsService;
 import com.pathlocked.points.ThresholdCurve;
+import com.pathlocked.ui.DraftCardOverlay;
 import com.pathlocked.ui.PanelSnapshot;
 import com.pathlocked.ui.PathlockedPanel;
 import com.pathlocked.ui.StatusOverlay;
@@ -47,8 +48,10 @@ import net.runelite.client.RuneLite;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.events.NpcLootReceived;
 import net.runelite.client.game.ItemManager;
+import net.runelite.client.input.MouseManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.ClientToolbar;
@@ -86,6 +89,9 @@ public class PathlockedPlugin extends Plugin implements PathlockedPanel.Actions
 	@Inject
 	private ItemManager itemManager;
 
+	@Inject
+	private MouseManager mouseManager;
+
 	private ContentRepository content;
 	private DraftService draftService;
 	private PointsService pointsService;
@@ -98,6 +104,7 @@ public class PathlockedPlugin extends Plugin implements PathlockedPanel.Actions
 	private RegionLockOverlay regionOverlay;
 	private StatusOverlay statusOverlay;
 	private ItemLockOverlay itemLockOverlay;
+	private DraftCardOverlay cardOverlay;
 
 	private boolean dirty;
 	private int ticksSinceSave;
@@ -141,9 +148,13 @@ public class PathlockedPlugin extends Plugin implements PathlockedPanel.Actions
 		regionOverlay = new RegionLockOverlay(client, this, config);
 		statusOverlay = new StatusOverlay(this, config);
 		itemLockOverlay = new ItemLockOverlay(this, config);
+		cardOverlay = new DraftCardOverlay(client, this);
+		cardOverlay.setEnabled(config.showCardOverlay());
 		overlayManager.add(regionOverlay);
 		overlayManager.add(statusOverlay);
 		overlayManager.add(itemLockOverlay);
+		overlayManager.add(cardOverlay);
+		mouseManager.registerMouseListener(cardOverlay.getMouseListener());
 
 		refreshPanel();
 	}
@@ -189,6 +200,8 @@ public class PathlockedPlugin extends Plugin implements PathlockedPanel.Actions
 		overlayManager.remove(regionOverlay);
 		overlayManager.remove(statusOverlay);
 		overlayManager.remove(itemLockOverlay);
+		overlayManager.remove(cardOverlay);
+		mouseManager.unregisterMouseListener(cardOverlay.getMouseListener());
 		clientToolbar.removeNavigation(navButton);
 		profile = null;
 		pendingDraft = false;
@@ -202,6 +215,15 @@ public class PathlockedPlugin extends Plugin implements PathlockedPanel.Actions
 	PathlockedConfig provideConfig(ConfigManager configManager)
 	{
 		return configManager.getConfig(PathlockedConfig.class);
+	}
+
+	@Subscribe
+	public void onConfigChanged(ConfigChanged event)
+	{
+		if ("pathlocked".equals(event.getGroup()) && cardOverlay != null)
+		{
+			cardOverlay.setEnabled(config.showCardOverlay());
+		}
 	}
 
 	@Subscribe
@@ -775,7 +797,12 @@ public class PathlockedPlugin extends Plugin implements PathlockedPanel.Actions
 		}
 		if (profile == null)
 		{
-			panel.refresh(PanelSnapshot.builder().loggedIn(false).build());
+			PanelSnapshot loggedOut = PanelSnapshot.builder().loggedIn(false).build();
+			panel.refresh(loggedOut);
+			if (cardOverlay != null)
+			{
+				cardOverlay.setSnapshot(loggedOut);
+			}
 			return;
 		}
 
@@ -790,7 +817,7 @@ public class PathlockedPlugin extends Plugin implements PathlockedPanel.Actions
 			}
 		}
 
-		panel.refresh(PanelSnapshot.builder()
+		PanelSnapshot snapshot = PanelSnapshot.builder()
 			.loggedIn(true)
 			.totalPoints(profile.totalPoints)
 			.availablePoints(profile.availablePoints())
@@ -804,7 +831,14 @@ public class PathlockedPlugin extends Plugin implements PathlockedPanel.Actions
 			.recentHistory(recentHistory)
 			.illegalKills(profile.illegalKills)
 			.violationTicks(profile.violationTicks)
-			.build());
+			.build();
+		panel.refresh(snapshot);
+		if (cardOverlay != null)
+		{
+			// Same snapshot as the panel, so the center-screen cards and the
+			// side panel can never disagree about the pending draft.
+			cardOverlay.setSnapshot(snapshot);
+		}
 	}
 
 	private List<UnlockEntry> buildUnlockEntries()

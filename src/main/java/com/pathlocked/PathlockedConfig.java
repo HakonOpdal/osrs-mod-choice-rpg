@@ -85,10 +85,21 @@ public interface PathlockedConfig extends Config
 	}
 
 	@ConfigItem(
+		keyName = "showCardOverlay",
+		name = "In-game draft cards",
+		description = "Show the center-screen draft cards when a choice is ready. Off = draft only in the side panel.",
+		position = 8
+	)
+	default boolean showCardOverlay()
+	{
+		return true;
+	}
+
+	@ConfigItem(
 		keyName = "seedOverride",
 		name = "Seed override",
 		description = "Optional numeric seed applied when a NEW profile is created (for shared/seeded runs). Leave empty to derive the seed from your account.",
-		position = 8
+		position = 9
 	)
 	default String seedOverride()
 	{
