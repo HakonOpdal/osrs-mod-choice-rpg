@@ -15,8 +15,11 @@ from the latest state. Keep it short — replace stale lines, don't append.**
   (item-tag + skill unlocks, void XP, keystone drafts, unlock-tree tab).
   Build green, 42/42 tests. /code-review self-pass (10 findings) + 3 Codex
   ensemble rounds (4 findings) all fixed; final round clean 3/3. Playtest
-  checklist: `docs/v0.2-test-handoff.html` (T1-T8, owner Haakon). PR to main
-  after playtest.
+  round 1 (2026-08-18): T2/T4/T5/T7/T8 verified; T1 failed (DraftCardOverlay
+  was never wired into the plugin - now wired, config toggle "In-game draft
+  cards", Codex clean) and awaits retest; T3/T6 untested (account lacked
+  resources/points). Checklist: `docs/v0.2-test-handoff.html`. PR to main
+  after T1 retest.
 - v0.1 + Stage-1 lanes (card overlay, region curation, wiki scraper, hub prep,
   README screenshots) all merged to `main` (PRs #1-#5). Hub-submission PR to
   runelite/plugin-hub still deferred until v0.2 ships.
