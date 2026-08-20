@@ -72,11 +72,12 @@ public class ProfileManagerTest
 		assertEquals(content.getStarterSkills().size(), migrated.unlockedSkills.size());
 		assertEquals(content.getStarterTags().size(), migrated.unlockedTags.size());
 		// Curve rebase first: spent becomes cost(0)+cost(1) on the new curve,
-		// the old 25-point surplus carries, then the v2 migration banks cost(2).
+		// the old 25-point surplus carries, then the v2 migration TOPS UP to
+		// exactly the skill draft's cost(2).
 		long rebasedSpent = ThresholdCurve.cost(0) + ThresholdCurve.cost(1);
 		assertEquals(rebasedSpent, migrated.spentPoints);
-		assertEquals("Rebase carries the old surplus, migration banks the skill draft",
-			rebasedSpent + 25 + ThresholdCurve.cost(2), migrated.totalPoints);
+		assertEquals("Migration tops up to exactly one instant skill draft",
+			rebasedSpent + ThresholdCurve.cost(2), migrated.totalPoints);
 		assertEquals(2, migrated.curveVersion);
 		assertEquals(DraftCategory.SKILL, migrated.nextCategoryOverride);
 
@@ -112,6 +113,26 @@ public class ProfileManagerTest
 		assertEquals(DraftCategory.SKILL, migrated.nextCategoryOverride);
 		assertFalse("The pre-override pending draft must not clear the override on pick",
 			migrated.pendingDraft.consumedOverride);
+	}
+
+	@Test
+	public void zeroProgressV01ProfileIsNotDoubleBanked() throws Exception
+	{
+		ContentRepository content = ContentRepository.load(new Gson());
+		ProfileManager manager = new ProfileManager(temporaryFolder.getRoot(), new Gson());
+
+		// Fresh v0.1 profile: original first-draft pre-bank of 250, nothing
+		// earned. Curve rebase restores the instant draft AND the v2 migration
+		// promises one — together they must yield exactly ONE free draft.
+		String v01Json = "{\"seed\":7,\"totalPoints\":250,\"spentPoints\":0,\"choiceIndex\":0,"
+			+ "\"unlockedRegions\":[12850],\"unlockedMonsters\":[\"chicken\"],\"history\":[]}";
+		Files.write(new File(temporaryFolder.getRoot(), "profile-102.json").toPath(),
+			v01Json.getBytes(StandardCharsets.UTF_8));
+
+		ProfileState migrated = manager.loadOrCreate(102L, content, 1L);
+		assertEquals("Exactly one instant draft, not two",
+			ThresholdCurve.cost(0), migrated.availablePoints());
+		assertEquals(DraftCategory.SKILL, migrated.nextCategoryOverride);
 	}
 
 	@Test

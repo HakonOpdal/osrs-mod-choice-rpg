@@ -187,11 +187,15 @@ public class ProfileManager
 			return false;
 		}
 		grantStarterSkillsAndTags(state, content);
-		// Bank the threshold the forced skill draft will spend. With a pending
-		// v0.1 draft still open, that draft consumes cost(choiceIndex) first,
-		// so the skill draft's own cost is the NEXT threshold.
-		int skillDraftIndex = state.pendingDraft != null ? state.choiceIndex + 1 : state.choiceIndex;
-		state.totalPoints += ThresholdCurve.cost(skillDraftIndex);
+		// Top up (never blind-add) to exactly what the promised instant skill
+		// draft needs: with a pending v0.1 draft still open, cost(choiceIndex)
+		// for that pick PLUS the next threshold for the skill draft; otherwise
+		// just the current threshold. Topping up instead of adding prevents
+		// double-banking on top of whatever the curve rebase already carried
+		// (e.g. a zero-progress v0.1 profile's original first-draft bank).
+		long required = ThresholdCurve.cost(state.choiceIndex)
+			+ (state.pendingDraft != null ? ThresholdCurve.cost(state.choiceIndex + 1) : 0);
+		state.totalPoints += Math.max(0, required - state.availablePoints());
 		state.nextCategoryOverride = DraftCategory.SKILL;
 		return true;
 	}
