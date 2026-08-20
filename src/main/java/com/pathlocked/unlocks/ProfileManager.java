@@ -65,7 +65,9 @@ public class ProfileManager
 				if (state != null && state.unlockedRegions != null && !state.unlockedRegions.isEmpty())
 				{
 					ProfileState normalized = normalize(state);
-					if (migrateToV2(normalized, content))
+					boolean rebased = rebaseToCurveV2(normalized);
+					boolean upgraded = migrateToV2(normalized, content);
+					if (rebased || upgraded)
 					{
 						migratedProfile = true;
 						save(accountHash, normalized);
@@ -135,6 +137,42 @@ public class ProfileManager
 	}
 
 	/**
+	 * Rebases a profile's point balances from the old power-law curve onto the
+	 * paced curve (curveVersion 2): spent points become the sum of the NEW
+	 * costs of the choices already made, and the banked surplus carries over
+	 * capped at one new threshold — so an old profile with a fat old-curve
+	 * bank cannot fire a burst of back-to-back drafts, a pending draft stays
+	 * exactly payable, and a zero-progress profile keeps the documented
+	 * instant first draft. Runs BEFORE {@link #migrateToV2}, so that
+	 * migration's banked threshold is never clamped away.
+	 *
+	 * @return true when a rebase happened and the profile should be re-saved
+	 */
+	private static boolean rebaseToCurveV2(ProfileState state)
+	{
+		if (state.curveVersion >= 2)
+		{
+			return false;
+		}
+		long oldAvailable = Math.max(0, state.availablePoints());
+		long rebasedSpent = 0;
+		for (int i = 0; i < state.choiceIndex; i++)
+		{
+			rebasedSpent += ThresholdCurve.cost(i);
+		}
+		long nextCost = ThresholdCurve.cost(state.choiceIndex);
+		long carried = Math.min(oldAvailable, nextCost);
+		if (state.pendingDraft != null || state.choiceIndex == 0)
+		{
+			carried = Math.max(carried, nextCost);
+		}
+		state.spentPoints = rebasedSpent;
+		state.totalPoints = rebasedSpent + carried;
+		state.curveVersion = 2;
+		return true;
+	}
+
+	/**
 	 * Upgrades a v0.1 profile (no skill/tag unlocks yet) in place: grants the
 	 * starter skills and tags, and banks one extra threshold with a forced
 	 * SKILL draft so the mid-run account picks its identity skill immediately
@@ -174,6 +212,7 @@ public class ProfileManager
 	{
 		ProfileState state = new ProfileState();
 		state.seed = seed;
+		state.curveVersion = 2;
 		// New runs start with the first threshold already banked so the very
 		// first login opens a draft — a taste of the loop before the grind.
 		state.totalPoints = ThresholdCurve.cost(0);

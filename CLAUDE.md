@@ -9,13 +9,17 @@ a free pick from both categories).
 working session and before every commit, so the next session always starts
 from the latest state. Keep it short — replace stale lines, don't append.**
 
-## Current Status (updated 2026-08-16)
+## Current Status (updated 2026-08-20)
 
-- **v0.2 complete: playtested T1-T8 all verified (2026-08-18), merged to
-  main.** Item-tag + skill unlocks, void XP, keystone drafts, unlock-tree tab,
-  center-screen draft cards (Lane A overlay wired in during playtest round 1).
-  Build green, 42/42 tests; /code-review self-pass + 3 Codex ensemble rounds +
-  wiring pass, all clean at the end.
+- **v0.2 complete and merged to main** (playtested T1-T8, 2026-08-18).
+- **Balancing build on `emdash/balancing-01`, build green 48/48 tests**:
+  paced ThresholdCurve v2 (350 -> 20,000 plateau at PACING_SPAN=141, pinned
+  to content scale by ContentDataTest), curve-rebase profile migration
+  (curveVersion field; caps old banks at one threshold, keeps pending drafts
+  payable, preserves the instant first draft), pick-timestamp telemetry with
+  clock seam + panel interval display. Self-review round: 9 findings fixed.
+  Codex pass pending; then P2 soak playtest (fresh profile already reset,
+  old one backed up as profile-*.v02-prebanked-backup-2026-08-20).
 - Playtest prep rule (standing): pre-bank the test profile
   (~/.runelite/pathlocked/profile-*.json, client closed) before every handoff
   so no test needs grinding. Test account is a hardcore ironman - no shop/GE
@@ -35,8 +39,14 @@ from the latest state. Keep it short — replace stale lines, don't append.**
   (15s window); dungeons inherit surface square via explicit mapping then
   ry-100 rule; unlisted NPCs/items and non-UNLOCKED ground earn no XP points,
   kills reject only LOCKED (trespass).
-- Next up: finish v0.2 review rounds, playtest handoff, balancing pass
-  (parked), then hub submission.
+- **Balancing (P1) implemented** on `emdash/balancing-01`: ThresholdCurve v2
+  "paced curve" (cost = expected pts/h x target interval, 350 -> 20k cap,
+  ~200h full run; research + model comparison in
+  `docs/balancing-research.html`) + per-pick timestamps (pacing telemetry).
+  Roadmap P1-P6 in the same doc. Next: P2 soak playtest (fresh profile, NOT
+  pre-banked) -> constant tuning -> P3 screenshot refresh -> P4 hub
+  submission -> v0.3 economy depth (diminishing returns, HP-scaled kills,
+  GE blocking).
 
 ## Key commands
 

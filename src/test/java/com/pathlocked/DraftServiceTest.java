@@ -223,6 +223,29 @@ public class DraftServiceTest
 	}
 
 	@Test
+	public void pickStampsTheTelemetryTimestampFromTheClock()
+	{
+		DraftService fixedClockService = new DraftService(content, () -> 1_755_000_000_000L);
+		ProfileState state = newStarterProfile(5);
+		state.totalPoints = ThresholdCurve.cost(0);
+		assertTrue(fixedClockService.maybeStartDraft(state));
+		fixedClockService.pick(state, 0);
+		assertEquals(1_755_000_000_000L, state.history.get(0).pickedAtMillis);
+	}
+
+	@Test
+	public void pickNeverSpendsIntoANegativeBalance()
+	{
+		ProfileState state = newStarterProfile(5);
+		state.totalPoints = ThresholdCurve.cost(0);
+		assertTrue(draftService.maybeStartDraft(state));
+		// A curve retune (or hand edit) shrank the bank after the roll.
+		state.totalPoints = 100;
+		assertNotNull(draftService.pick(state, 0));
+		assertEquals("Deficit is forgiven, not carried as debt", 0, state.availablePoints());
+	}
+
+	@Test
 	public void pickUnlocksSpendsAndAdvances()
 	{
 		ProfileState state = newStarterProfile(7);

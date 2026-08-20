@@ -9,6 +9,7 @@ import com.pathlocked.unlocks.ProfileState;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.function.LongSupplier;
 
 /**
  * Rolls and applies draft choices. Fully deterministic from
@@ -26,10 +27,21 @@ public class DraftService
 	private static final int KEYSTONE_INTERVAL = 10;
 
 	private final ContentRepository content;
+	private final LongSupplier clock;
 
 	public DraftService(ContentRepository content)
 	{
+		this(content, System::currentTimeMillis);
+	}
+
+	/**
+	 * @param clock epoch-millis source for pick timestamps, injectable so
+	 * tests can freeze time; offers themselves stay purely seed-derived
+	 */
+	public DraftService(ContentRepository content, LongSupplier clock)
+	{
 		this.content = content;
+		this.clock = clock;
 	}
 
 	/**
@@ -120,13 +132,18 @@ public class DraftService
 			state.nextCategoryOverride = null;
 		}
 
-		state.spentPoints += ThresholdCurve.cost(state.choiceIndex);
+		// Never spend into a negative balance: a draft can only have been
+		// offered as affordable, but a curve retune between roll and pick
+		// (or a hand-edited profile) may have shrunk the bank since.
+		state.spentPoints += Math.min(ThresholdCurve.cost(state.choiceIndex),
+			Math.max(0, state.availablePoints()));
 
 		ProfileState.ChoiceRecord record = new ProfileState.ChoiceRecord();
 		record.choiceIndex = state.choiceIndex;
 		record.offers = draft.offers;
 		record.picked = picked;
 		record.rerollsUsed = draft.rerollsUsed;
+		record.pickedAtMillis = clock.getAsLong();
 		state.history.add(record);
 
 		state.choiceIndex++;

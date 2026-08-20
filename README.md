@@ -48,18 +48,21 @@ on *uncharted* ground (unmapped dungeons and the like).
 
 ### 2. Hit a threshold
 
-Thresholds escalate, so each unlock costs more than the last (base 250,
-growth ^1.35, rounded to 25):
+Thresholds escalate on a **paced curve**: each cost is the expected
+points-per-hour at that stage times a target interval that stretches from
+21 minutes (first draft) to 2.5 hours (last), then plateaus — a full run is
+roughly 200 hours to 100%, and there is never a late-game wall:
 
 | Choice # | Points to unlock |
 |---:|---:|
-| 1 | 250 |
-| 2 | 625 |
-| 3 | 1,100 |
-| 4 | 1,625 |
-| 5 | 2,200 |
-| 6 | 2,800 |
+| 1 | 350 |
+| 2 | 425 |
+| 3 | 475 |
+| 4 | 525 |
+| 5 | 575 |
+| 6 | 625 |
 | … | … |
+| 143+ | 20,000 (cap) |
 
 The first threshold is banked for new profiles, so you draft immediately on your
 first login. When you can afford the next one, a draft opens automatically.

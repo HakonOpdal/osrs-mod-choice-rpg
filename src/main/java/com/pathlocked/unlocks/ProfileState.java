@@ -41,12 +41,24 @@ public class ProfileState
 		public List<DraftOption> offers = new ArrayList<>();
 		public DraftOption picked;
 		public int rerollsUsed;
+		/**
+		 * Wall-clock epoch millis of the pick — pacing telemetry, so a
+		 * playtested profile shows the real interval between drafts against
+		 * the curve's target. 0 on records from before this field existed.
+		 */
+		public long pickedAtMillis;
 	}
 
 	public long seed;
 	public long totalPoints;
 	public long spentPoints;
 	public int choiceIndex;
+	/**
+	 * The ThresholdCurve generation this profile's points were last balanced
+	 * against. 0 (absent) = the v0.1/v0.2 power-law curve; 2 = the paced
+	 * curve. {@code ProfileManager} rebases point balances when it changes.
+	 */
+	public int curveVersion;
 	public Set<Integer> unlockedRegions = new LinkedHashSet<>();
 	/**
 	 * Lowercase monster names.

@@ -813,7 +813,8 @@ public class PathlockedPlugin extends Plugin implements PathlockedPanel.Actions
 			ProfileState.ChoiceRecord record = history.get(i);
 			if (record.picked != null)
 			{
-				recentHistory.add((record.choiceIndex + 1) + ". " + record.picked.getName());
+				recentHistory.add((record.choiceIndex + 1) + ". " + record.picked.getName()
+					+ intervalSuffix(history, i));
 			}
 		}
 
@@ -839,6 +840,27 @@ public class PathlockedPlugin extends Plugin implements PathlockedPanel.Actions
 			// side panel can never disagree about the pending draft.
 			cardOverlay.setSnapshot(snapshot);
 		}
+	}
+
+	/**
+	 * " · 42m" — wall-clock gap since the previous pick, the visible face of
+	 * the pacing telemetry. Empty when either timestamp predates the field.
+	 */
+	private static String intervalSuffix(List<ProfileState.ChoiceRecord> history, int index)
+	{
+		if (index == 0 || history.get(index).pickedAtMillis == 0
+			|| history.get(index - 1).pickedAtMillis == 0)
+		{
+			return "";
+		}
+		long minutes = (history.get(index).pickedAtMillis
+			- history.get(index - 1).pickedAtMillis) / 60_000;
+		if (minutes < 0)
+		{
+			return "";
+		}
+		return minutes < 60 ? " · " + minutes + "m"
+			: " · " + (minutes / 60) + "h " + (minutes % 60) + "m";
 	}
 
 	private List<UnlockEntry> buildUnlockEntries()

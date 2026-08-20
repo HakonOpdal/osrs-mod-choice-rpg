@@ -71,8 +71,13 @@ public class ProfileManagerTest
 		assertFalse(manager.isCreatedNewProfile());
 		assertEquals(content.getStarterSkills().size(), migrated.unlockedSkills.size());
 		assertEquals(content.getStarterTags().size(), migrated.unlockedTags.size());
-		assertEquals("Migration banks one threshold so the skill pick is instant",
-			900 + ThresholdCurve.cost(2), migrated.totalPoints);
+		// Curve rebase first: spent becomes cost(0)+cost(1) on the new curve,
+		// the old 25-point surplus carries, then the v2 migration banks cost(2).
+		long rebasedSpent = ThresholdCurve.cost(0) + ThresholdCurve.cost(1);
+		assertEquals(rebasedSpent, migrated.spentPoints);
+		assertEquals("Rebase carries the old surplus, migration banks the skill draft",
+			rebasedSpent + 25 + ThresholdCurve.cost(2), migrated.totalPoints);
+		assertEquals(2, migrated.curveVersion);
 		assertEquals(DraftCategory.SKILL, migrated.nextCategoryOverride);
 
 		// Migration persists: a second load must not bank another threshold.
@@ -97,12 +102,57 @@ public class ProfileManagerTest
 			v01Json.getBytes(StandardCharsets.UTF_8));
 
 		ProfileState migrated = manager.loadOrCreate(88L, content, 1L);
-		assertEquals(1200 + ThresholdCurve.cost(3), migrated.totalPoints);
+		// Rebase keeps the pending draft exactly payable (cost(2) carried),
+		// then the v2 migration banks the NEXT threshold for the skill draft.
+		long rebasedSpent = ThresholdCurve.cost(0) + ThresholdCurve.cost(1);
+		assertEquals(rebasedSpent + ThresholdCurve.cost(2) + ThresholdCurve.cost(3),
+			migrated.totalPoints);
 		assertEquals("Legacy pending draft gets its category backfilled",
 			DraftCategory.REGION, migrated.pendingDraft.category);
 		assertEquals(DraftCategory.SKILL, migrated.nextCategoryOverride);
 		assertFalse("The pre-override pending draft must not clear the override on pick",
 			migrated.pendingDraft.consumedOverride);
+	}
+
+	@Test
+	public void curveRebaseCapsAnOldFatBankAtOneThreshold() throws Exception
+	{
+		ContentRepository content = ContentRepository.load(new Gson());
+		ProfileManager manager = new ProfileManager(temporaryFolder.getRoot(), new Gson());
+
+		// v0.2 profile (skills present, no curveVersion): 15,000 banked under
+		// the old curve at choiceIndex 20 would afford ~9 paced drafts.
+		String v02Json = "{\"seed\":7,\"totalPoints\":45000,\"spentPoints\":30000,\"choiceIndex\":20,"
+			+ "\"unlockedRegions\":[12850],\"unlockedMonsters\":[\"chicken\"],"
+			+ "\"unlockedSkills\":[\"attack\",\"strength\",\"hitpoints\"],"
+			+ "\"unlockedTags\":[\"bronze tier\"],\"history\":[]}";
+		Files.write(new File(temporaryFolder.getRoot(), "profile-99.json").toPath(),
+			v02Json.getBytes(StandardCharsets.UTF_8));
+
+		ProfileState rebased = manager.loadOrCreate(99L, content, 1L);
+		assertEquals(2, rebased.curveVersion);
+		assertTrue("No draft burst: at most one threshold may be banked",
+			rebased.availablePoints() <= ThresholdCurve.cost(20));
+	}
+
+	@Test
+	public void curveRebaseRestoresTheInstantFirstDraft() throws Exception
+	{
+		ContentRepository content = ContentRepository.load(new Gson());
+		ProfileManager manager = new ProfileManager(temporaryFolder.getRoot(), new Gson());
+
+		// Zero-progress v0.2 profile pre-banked with the OLD cost(0)=250,
+		// which no longer meets the new 350 first threshold.
+		String v02Json = "{\"seed\":7,\"totalPoints\":250,\"spentPoints\":0,\"choiceIndex\":0,"
+			+ "\"unlockedRegions\":[12850],\"unlockedMonsters\":[\"chicken\"],"
+			+ "\"unlockedSkills\":[\"attack\",\"strength\",\"hitpoints\"],"
+			+ "\"unlockedTags\":[\"bronze tier\"],\"history\":[]}";
+		Files.write(new File(temporaryFolder.getRoot(), "profile-101.json").toPath(),
+			v02Json.getBytes(StandardCharsets.UTF_8));
+
+		ProfileState rebased = manager.loadOrCreate(101L, content, 1L);
+		assertEquals("Instant-first-draft promise survives the curve swap",
+			ThresholdCurve.cost(0), rebased.availablePoints());
 	}
 
 	@Test

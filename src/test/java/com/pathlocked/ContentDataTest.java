@@ -50,6 +50,22 @@ public class ContentDataTest
 	}
 
 	@Test
+	public void pacingSpanMatchesTheContentScale()
+	{
+		// The curve's pacing ramp is normalized against the LAST draft index
+		// of a full run. If this fails you added/removed content: retune
+		// ThresholdCurve.PACING_SPAN (and re-read docs/balancing-research.html)
+		// rather than silently flattening the back half of the run.
+		ContentRepository content = ContentRepository.load(new Gson());
+		int unlockables = content.getRegions().size() + content.getMonsters().size()
+			+ content.getItemTags().size() + content.getSkillNames().size();
+		int starterGrants = content.getStarterRegions().size() + content.getStarterMonsters().size()
+			+ content.getStarterSkills().size() + content.getStarterTags().size();
+		int lastDraftIndex = unlockables - starterGrants - 1;
+		assertEquals(lastDraftIndex, com.pathlocked.points.ThresholdCurve.PACING_SPAN);
+	}
+
+	@Test
 	public void skillPoolMatchesRuneliteSkillNames()
 	{
 		ContentRepository content = ContentRepository.load(new Gson());
