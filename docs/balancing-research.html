@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>balancing-01 · Pathlocked balancing & roadmap</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { --bg:#16181d; --panel:#1e2128; --panel2:#23272f; --border:#2e333d;
+    --text:#d6d9de; --muted:#8b919c; --accent:#c9a35c; --green:#7fa66a; --red:#b06a5f; --blue:#6d8fb5; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text);
+    font:15px/1.55 -apple-system,"Segoe UI",Helvetica,Arial,sans-serif; }
+  .wrap { max-width:940px; margin:0 auto; padding:40px 28px 80px; }
+  h1 { font-size:25px; margin:0 0 4px; } h1 .v{color:var(--accent);}
+  .sub { color:var(--muted); margin-bottom:30px; }
+  h2 { font-size:19px; margin:42px 0 12px; padding-bottom:6px; border-bottom:1px solid var(--border); }
+  h2 .n { color:var(--accent); margin-right:8px; }
+  h3 { font-size:15.5px; margin:20px 0 8px; color:var(--accent); }
+  table { border-collapse:collapse; width:100%; margin:12px 0; font-size:13.5px; }
+  th,td { text-align:left; padding:7px 10px; border:1px solid var(--border); vertical-align:top; }
+  th { background:var(--panel2); font-weight:600; } td { background:var(--panel); }
+  td.num, th.num { text-align:right; font-variant-numeric:tabular-nums; }
+  code { background:var(--panel2); border:1px solid var(--border); border-radius:4px;
+    padding:1px 5px; font-size:12.5px; font-family:"SF Mono",Menlo,monospace; }
+  .verdict { background:var(--panel); border:1px solid var(--border); border-left:3px solid var(--red);
+    border-radius:6px; padding:14px 18px; margin:14px 0; }
+  .rec { background:var(--panel); border:1px solid var(--border); border-left:3px solid var(--green);
+    border-radius:6px; padding:14px 18px; margin:14px 0; }
+  .muted { color:var(--muted); } .good{color:var(--green);} .bad{color:var(--red);}
+  ul { margin:8px 0; padding-left:22px; } li { margin:4px 0; }
+  .prio { display:flex; gap:14px; margin:12px 0; }
+  .prio .tag { flex:0 0 46px; color:var(--accent); font-weight:700; padding-top:2px; }
+  .prio .who { flex: 0 0 76px; color:var(--muted); font-size:13px; padding-top:3px; }
+  .formula { background:var(--panel2); border:1px solid var(--border); border-radius:6px;
+    padding:12px 16px; margin:10px 0; font-family:"SF Mono",Menlo,monospace; font-size:13.5px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Pathlocked <span class="v">balancing &amp; roadmap</span></h1>
+<div class="sub">2026-08-20 · answers three questions: hub-readiness, the threshold-curve model
+(deep research: cross-game prior art + OSRS earn-rate data + simulation), and the prioritized
+plan for the full plugin.</div>
+
+<h2><span class="n">1</span>Hub submission — not yet, and here's exactly why</h2>
+
+<div class="verdict"><b>Verdict: hold.</b> Two hard blockers, one soft one — roughly one working
+session plus one soak-playtest away from ready.</div>
+
+<ul>
+<li><b>Balancing (hard).</b> Simulation with researched F2P earn rates: the current curve
+(<code>250·(i+1)^1.35</code>) totals <b class="bad">~2,150 hours</b> with the last drafts costing
+25&nbsp;h each — an order of magnitude past the design target ("late draft every few hours"). Shipping
+to the hub, getting players invested, and THEN overhauling the economy churns every early adopter's
+run. Fix the curve first; the hub release should be the tuned one.</li>
+<li><b>Soak test (hard).</b> v0.2 shipped after checklist tests, not sustained play. Item locks, void
+XP, and the new curve need one 5–10 hour honest playthrough before strangers run it. The balancing
+build adds per-pick timestamps so that playthrough doubles as pacing telemetry.</li>
+<li><b>Screenshots (soft).</b> <code>draft-cards.png</code> in the README predates the card overlay —
+it shows the side panel. The center-screen cards are the listing's wow shot; refresh before submitting.</li>
+</ul>
+<p class="muted">Otherwise ready: repo public, README/icon/properties/checklist done
+(<code>docs/hub-submission.md</code>), plugin is restriction-only (removes capabilities, no
+automation) which is the category hub review reliably passes.</p>
+
+<h2><span class="n">2</span>Balancing — research and the chosen model</h2>
+
+<h3>What the earn side actually looks like (researched, F2P)</h3>
+<table>
+<tr><th>Phase</th><th class="num">Skilling pts/h (1pt/10xp)</th><th class="num">Kill pts/h</th><th class="num">Combined, realistic</th></tr>
+<tr><td>Early (fresh account, starter regions)</td><td class="num">500–1,500</td><td class="num">300–1,000 (chickens→goblins)</td><td class="num"><b>~1,000</b></td></tr>
+<tr><td>Mid (~50s skills, several regions)</td><td class="num">3,000–6,000</td><td class="num">2,000–3,500 (guards/hill giants)</td><td class="num"><b>~4,000</b></td></tr>
+<tr><td>Late (70s+, most content)</td><td class="num">5,000–15,000</td><td class="num">3,500–5,000 (plateaus!)</td><td class="num"><b>~8,000</b></td></tr>
+</table>
+<ul class="muted">
+<li>Earn rate grows <b>~8–10×</b> early→late — not the ~80× the current exponent silently assumes.</li>
+<li>Kill points <i>plateau</i> at ~3–4k/h from combat level ~28 upward (kills/h falls as combat level rises).
+Fix candidate for v0.3: scale kill points by HP rather than combat level alone.</li>
+<li>Exploit surface: GE-fed artisan skills (wine cooking ≈ 470k xp/h ⇒ 47k pts/h). Mitigation is the
+design doc's per-skill diminishing returns — scheduled v0.3; ironman-style players are unaffected.</li>
+</ul>
+
+<h3>What other games do (prior-art highlights)</h3>
+<table>
+<tr><th>System</th><th>Curve shape</th><th>Why</th><th>Lesson for Pathlocked</th></tr>
+<tr><td>Tileman (1,000 xp/tile) &amp; OSRS TCG (flat 2,500-credit packs)</td><td>Flat</td><td>Rising earn rate makes rewards accelerate; scarcity is the difficulty</td><td>OSRS restriction players happily accept flat/gentle costs — no one ships steep curves</td></tr>
+<tr><td>OSRS Leagues</td><td>Geometric ×1.5–2 tiers</td><td>Paired with 10–40× escalating task payouts</td><td>Escalating thresholds only work with escalating payouts — we don't have 40×</td></tr>
+<tr><td>Hades mirror</td><td>Linear per track, parallel cheap tracks</td><td>Meta-progression must never dead-zone</td><td>Something affordable should always be near</td></tr>
+<tr><td>Fortnite battle pass</td><td>Ramp then plateau (flat 75k/level)</td><td>Predictable sessions-per-level to a finish line</td><td>Finite unlock lists want a bounded, plannable total</td></tr>
+<tr><td>Idle games (×1.07–1.15/purchase)</td><td>Exponential</td><td>The wall is intentional — it triggers prestige resets</td><td class="bad">Exactly what an unresettable honor mode must avoid</td></tr>
+</table>
+<p class="muted">Design-literature consensus: pick the wall-clock cadence first, then derive
+<code>cost(i) = expected_rate(i) × target_interval(i)</code>; time-per-unlock growing ~5–20×
+start→end is the envelope that feels good in long games. Growth of 100×+ appears only in games
+where quitting-and-resetting is the intended response.</p>
+
+<h3>Model comparison (simulated against the researched earn ramp)</h3>
+<table>
+<tr><th>Model</th><th class="num">d1</th><th class="num">d10</th><th class="num">d50</th><th class="num">d143</th>
+<th class="num">total hours</th><th class="num">h/draft d10</th><th class="num">d50</th><th class="num">d143</th><th>verdict</th></tr>
+<tr><td>Current <code>250·(i+1)^1.35</code></td><td class="num">250</td><td class="num">5,600</td><td class="num">49,150</td><td class="num">203,075</td>
+<td class="num bad">2,153</td><td class="num">3.2</td><td class="num">12.3</td><td class="num bad">25.4</td><td class="bad">Wall; assumes 80× earn growth</td></tr>
+<tr><td>Linear <code>250·(i+1)</code></td><td class="num">250</td><td class="num">2,500</td><td class="num">12,500</td><td class="num">35,750</td>
+<td class="num">472</td><td class="num">1.4</td><td class="num">3.1</td><td class="num">4.5</td><td>Workable but mid-game drags</td></tr>
+<tr><td>Flat 2,500 (TCG-style)</td><td class="num">2,500</td><td class="num">2,500</td><td class="num">2,500</td><td class="num">2,500</td>
+<td class="num">93</td><td class="num">1.4</td><td class="num">0.6</td><td class="num">0.3</td><td>Backwards: brutal first draft, trivial ending; wrong for a finite list</td></tr>
+<tr><td><b>Paced curve <code>R(i)·H(i)</code></b></td><td class="num">350</td><td class="num">850</td><td class="num">4,350</td><td class="num">20,000</td>
+<td class="num good">204</td><td class="num">0.5</td><td class="num">1.1</td><td class="num good">2.5</td><td class="good">Hits every design target by construction</td></tr>
+</table>
+
+<div class="rec"><b>Recommendation: the paced curve.</b> Cost is the product of two explicit,
+named models — the earn-rate model and the target draft interval:
+<div class="formula">
+R(i) = 1,000 + 7,000 · (i/142)^0.8&nbsp;&nbsp;&nbsp;// expected points/hour at draft i (researched)<br>
+H(i) = 0.35 + 2.15 · (i/142)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// target hours between drafts: 21 min → 2.5 h (7×)<br>
+cost(i) = round25( R(i) · H(i) )&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// 350 → 20,000 points
+</div>
+Why this over a tuned exponent: the four constants ARE the game-feel knobs (early rate, late rate,
+first interval, last interval) — after the soak playtest we adjust the constant that's wrong instead
+of re-deriving an opaque exponent. Totals: ~1.17M points ≈ 11.7M XP-equivalent (one 99-skill scale),
+~200 hours to 100% — squarely in restriction-mode territory without Tileman's 2,500-hour extreme.
+Deterministic and seed-fair like today. Implementation ships with per-pick timestamps in the profile
+(pacing telemetry) so the soak test measures real intervals against H(i).</div>
+
+<p class="muted">Migration: the curve is a stateless function of choiceIndex — no profile migration
+needed. In-flight runs simply see cheaper next thresholds (a one-time catch-up burst of drafts for
+accounts with banked points, e.g. the test account). Fresh runs are unaffected.</p>
+
+<h2><span class="n">3</span>Prioritized plan — to hub and beyond</h2>
+
+<div class="prio"><div class="tag">P1</div><div class="who">me</div><div>
+<b>Balancing build</b> (branch <code>emdash/balancing-01</code>): ThresholdCurve v2 (paced model,
+4 named constants), per-pick timestamps for pacing telemetry, updated threshold table in README,
+tests (monotonicity, target intervals, simulation still 100%-completes). Usual review pipeline.
+</div></div>
+<div class="prio"><div class="tag">P2</div><div class="who">you</div><div>
+<b>Soak playtest, 5–10 h</b> on a FRESH profile (not pre-banked — this one measures real pacing).
+Deliverable back to me: the profile JSON (it now carries pick timestamps) + gut feel notes.
+I turn that into constant adjustments, if any.
+</div></div>
+<div class="prio"><div class="tag">P3</div><div class="who">both</div><div>
+<b>Release polish</b>: re-shoot <code>draft-cards.png</code> with the card overlay (yours),
+README threshold table + FAQ honesty pass on honor-only tags (mine), version bump.
+</div></div>
+<div class="prio"><div class="tag">P4</div><div class="who">both</div><div>
+<b>Hub submission</b>: walk <code>docs/hub-submission.md</code>, I prepare the
+<code>runelite/plugin-hub</code> PR, you own the account that submits it. Then the Reddit/post moment
+the design doc calls the v0.2 milestone.
+</div></div>
+<div class="prio"><div class="tag">P5</div><div class="who">me</div><div>
+<b>v0.3 — economy depth</b> (order within negotiable): per-skill diminishing returns (kills the wine
+exploit; design doc anti-degeneracy rule), HP-scaled kill points (fixes the 3–4k/h kill plateau),
+GE/shop-buy blocking + training-verb blocking, item quarantine state for locked drops, quest bundles,
+curses, seeded-run UX polish.
+</div></div>
+<div class="prio"><div class="tag">P6</div><div class="who">me</div><div>
+<b>v1.0 — community flywheel</b>: group mode (shared pool, owned unlocks), profile/unlock-tree share
+cards, chat-voted drafts.
+</div></div>
+
+<p class="muted">Standing risks tracked: honor-mode ceiling (accepted), members-content scope
+(v0.3+), Jagex/hub policy on draft UI (restriction-only + no stakes: low risk, TCG precedent).</p>
+
+</div>
+</body>
+</html>
